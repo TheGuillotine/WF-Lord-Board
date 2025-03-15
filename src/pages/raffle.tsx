@@ -48,7 +48,7 @@ export default function RafflePage() {
           <section className="upload-section">
             <h2 className="section-title">1. Upload Participants List</h2>
             <p className="section-desc">
-              Upload an Excel file (.xlsx, .xls) or CSV file containing wallet addresses of participants.
+              Upload a CSV file or text file containing wallet addresses of participants.
               The raffle power will be calculated based on their staked Lords.
             </p>
             

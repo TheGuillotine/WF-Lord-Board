@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Head from 'next/head';
 import { EnhancedLayout } from '../components/Layout/EnhancedLayout';
 import { FileUploader } from '../components/Raffle/FileUploader';
@@ -15,7 +15,6 @@ export default function RafflePage() {
     isProcessing,
     isDrawing,
     fileError,
-    loading,
     error,
     raffleComplete
   } = useRaffle();
@@ -64,7 +63,7 @@ export default function RafflePage() {
               <section className="participants-section">
                 <h2 className="section-title">2. Participants &amp; Raffle Power</h2>
                 <p className="section-desc">
-                  Each participant's raffle power is based on their staked Lords.
+                  Each participant&apos;s raffle power is based on their staked Lords.
                   Higher raffle power means better chances of winning.
                 </p>
                 

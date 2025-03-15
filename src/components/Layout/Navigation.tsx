@@ -22,6 +22,11 @@ export function Navigation() {
             <span className="nav-link">Stakers Data</span>
           </Link>
         </li>
+        <li className={`nav-item ${isActive('/raffle')}`}>
+          <Link href="/raffle">
+            <span className="nav-link">Organize a Raffle</span>
+          </Link>
+        </li>
       </ul>
     </nav>
   );

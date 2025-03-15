@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
-import { StakerData } from './useStakersData';
+import { useState, useCallback } from 'react';
 import { useNFTData } from './useNFTData';
 
 export interface Participant {
@@ -26,7 +25,13 @@ export function useRaffle() {
       rafflePower: number;
     }> = {};
     
-    const calculateLordRafflePower = (lord: any): number => {
+    const calculateLordRafflePower = (lord: {
+      isStaked: boolean;
+      stakingDuration?: number;
+      attributes: {
+        rank: string[];
+      };
+    }): number => {
       if (!lord.isStaked || !lord.stakingDuration) return 0;
       
       const rarity = lord.attributes.rank[0]?.toLowerCase() || '';

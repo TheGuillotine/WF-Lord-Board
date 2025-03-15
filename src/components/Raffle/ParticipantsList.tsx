@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Participant } from '../../hooks/useRaffle';
 
 interface ParticipantsListProps {
@@ -38,6 +38,10 @@ export function ParticipantsList({ participants }: ParticipantsListProps) {
   const formatNumber = (num: number) => {
     return num.toLocaleString();
   };
+
+  // Count participants with and without raffle power
+  const eligibleCount = participants.filter(p => p.rafflePower > 0).length;
+  const ineligibleCount = participants.length - eligibleCount;
   
   if (participants.length === 0) {
     return (
@@ -74,6 +78,14 @@ export function ParticipantsList({ participants }: ParticipantsListProps) {
           <div className="stat-item">
             <span className="stat-label">Total Participants:</span>
             <span className="stat-value">{participants.length}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Eligible (with Raffle Power):</span>
+            <span className="stat-value">{eligibleCount}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Ineligible:</span>
+            <span className="stat-value">{ineligibleCount}</span>
           </div>
           <div className="stat-item">
             <span className="stat-label">Total Raffle Power:</span>
@@ -120,7 +132,7 @@ export function ParticipantsList({ participants }: ParticipantsListProps) {
                   {participant.isWinner ? (
                     <span className="winner-badge">Winner! 🏆</span>
                   ) : participant.rafflePower === 0 ? (
-                    <span className="no-power-badge">No Raffle Power</span>
+                    <span className="no-power-badge" title="This address has no staked Lords or is not found in the staking records">No Raffle Power</span>
                   ) : (
                     <span className="eligible-badge">Eligible</span>
                   )}
@@ -130,6 +142,13 @@ export function ParticipantsList({ participants }: ParticipantsListProps) {
           </tbody>
         </table>
       </div>
+      
+      {filteredParticipants.length > 0 && ineligibleCount > 0 && (
+        <div className="info-message mt-4">
+          <strong>Note:</strong> Addresses with "No Raffle Power" either have no staked Lords or are not found in the system. 
+          Only addresses with raffle power are eligible to win the raffle.
+        </div>
+      )}
       
       {totalPages > 1 && (
         <div className="pagination">

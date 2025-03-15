@@ -64,6 +64,37 @@
   font-size: 1.05rem;
 }
 
+/* Export button styling */
+.export-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+  color: var(--text-light);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.export-btn::before {
+  content: "📊";
+  margin-right: 0.5rem;
+}
+
+.export-btn:hover {
+  background-color: var(--hover-bg);
+  color: var(--primary-light);
+}
+
+.export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .skeleton-row td {
   height: 30px;
 }
@@ -124,5 +155,14 @@
   
   .stakers-table .raffle-power {
     font-size: 0.9rem;
+  }
+  
+  .header-controls {
+    margin-top: 0.5rem;
+  }
+  
+  .export-btn {
+    width: 100%;
+    margin-top: 0.5rem;
   }
 }

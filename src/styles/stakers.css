@@ -53,6 +53,17 @@
   font-weight: bold;
 }
 
+/* Raffle Power column styling */
+.stakers-table .raffle-power-col {
+  background-color: rgba(255, 215, 0, 0.1);
+}
+
+.stakers-table .raffle-power {
+  font-weight: bold;
+  color: #FFA500;
+  font-size: 1.05rem;
+}
+
 .skeleton-row td {
   height: 30px;
 }
@@ -66,6 +77,41 @@
   animation: pulse 1.5s infinite;
 }
 
+/* Tooltip for raffle power explanation */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 280px;
+  background-color: var(--card-bg);
+  color: var(--text-light);
+  text-align: left;
+  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 20;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  /* Fade in tooltip */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
 @media (max-width: 768px) {
   .stakers-table {
     font-size: 0.8rem;
@@ -74,5 +120,9 @@
   .stakers-table th,
   .stakers-table td {
     padding: 0.5rem;
+  }
+  
+  .stakers-table .raffle-power {
+    font-size: 0.9rem;
   }
 }

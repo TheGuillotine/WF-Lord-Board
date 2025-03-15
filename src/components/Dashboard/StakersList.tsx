@@ -125,7 +125,20 @@ export function StakersList({ stakers, loading }: StakersListProps) {
               <th>Legendary Lords</th>
               <th>Mystic Lords</th>
               <th>Total Lords</th>
-              <th className="raffle-power-col">Raffle Power</th>
+              <th className="raffle-power-col">
+                <div className="tooltip">
+                  Raffle Power
+                  <span className="tooltip-text">
+                    <strong>Raffle Power Calculation:</strong><br />
+                    • Rare: 1 ticket × days staked<br />
+                    • Epic: 2 tickets × days staked<br />
+                    • Legendary: 4 tickets × days staked<br />
+                    • Mystic: 8 tickets × days staked<br />
+                    <br />
+                    Higher raffle power = better chances in raffles
+                  </span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>

@@ -1,0 +1,20 @@
+@import './navigation.css';
+@import './stakers.css';
+
+/* Additional styles for the enhanced version */
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem 1rem;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem 0.5rem;
+  }
+}

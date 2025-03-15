@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { StakerData } from './useStakersData';
 import { useNFTData } from './useNFTData';
-import * as XLSX from 'xlsx';
 
 export interface Participant {
   address: string;
@@ -72,8 +71,8 @@ export function useRaffle() {
     return stakerMap;
   }, [allLords]);
   
-  // Parse uploaded Excel file
-  const parseExcelFile = useCallback(async (file: File) => {
+  // Parse uploaded file (CSV or TXT)
+  const parseFile = useCallback(async (file: File) => {
     setFileError(null);
     setIsProcessing(true);
     setRaffleComplete(false);
@@ -81,33 +80,36 @@ export function useRaffle() {
     
     try {
       // Read file
-      const arrayBuffer = await file.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer);
+      const text = await file.text();
       
-      // Get first sheet
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      
-      // Convert to JSON
-      const data = XLSX.utils.sheet_to_json(worksheet);
-      
-      // Extract addresses from the data
+      // Parse the content
       const addresses: string[] = [];
       
-      data.forEach((row: any) => {
-        // Try to find an address property in the row
-        const possibleAddressKeys = Object.keys(row).filter(key => {
-          const value = row[key];
-          return typeof value === 'string' && 
-                 value.length >= 42 && 
-                 value.startsWith('0x');
+      // We'll handle both CSV and plain text formats
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        // Split by lines and look for addresses
+        const lines = text.split(/\r?\n/);
+        lines.forEach(line => {
+          // Split line by common delimiters (comma, semicolon, tab)
+          const parts = line.split(/[,;\t]/);
+          
+          // Look for ethereum addresses (0x followed by 40 hex chars)
+          parts.forEach(part => {
+            const trimmed = part.trim().replace(/^["'](.*)["']$/, '$1'); // Remove quotes
+            if (/^0x[a-fA-F0-9]{40}$/.test(trimmed)) {
+              addresses.push(trimmed.toLowerCase());
+            }
+          });
         });
+      } else {
+        // For non-CSV, extract all Ethereum addresses from the text
+        const regex = /0x[a-fA-F0-9]{40}/g;
+        const matches = text.match(regex);
         
-        if (possibleAddressKeys.length > 0) {
-          const addressValue = row[possibleAddressKeys[0]];
-          addresses.push(addressValue.toLowerCase());
+        if (matches) {
+          addresses.push(...matches.map(addr => addr.toLowerCase()));
         }
-      });
+      }
       
       if (addresses.length === 0) {
         setFileError('No valid wallet addresses found in the file');
@@ -141,8 +143,8 @@ export function useRaffle() {
       setIsProcessing(false);
       
     } catch (err) {
-      console.error('Error parsing Excel file:', err);
-      setFileError('Error parsing the file. Please ensure it is a valid Excel file.');
+      console.error('Error parsing file:', err);
+      setFileError('Error parsing the file. Please ensure it is a valid file format.');
       setIsProcessing(false);
     }
   }, [processStakersData]);
@@ -215,7 +217,7 @@ export function useRaffle() {
   return {
     participants,
     winners,
-    parseExcelFile,
+    parseExcelFile: parseFile, // renamed but kept the same function name for compatibility
     conductRaffle,
     isProcessing,
     isDrawing,

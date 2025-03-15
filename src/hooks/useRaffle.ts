@@ -17,7 +17,7 @@ export function useRaffle() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [raffleComplete, setRaffleComplete] = useState(false);
   
-  // Process the stakers data to get raffle power - same formula as in Stakers Data
+  // Process the stakers data to get raffle power
   const processStakersData = useCallback(() => {
     if (!allLords.length) return {};
     
@@ -25,26 +25,20 @@ export function useRaffle() {
       rafflePower: number;
     }> = {};
     
-    // Get all staked lords first
-    const stakedLords = allLords.filter(lord => lord.isStaked);
-    
-    // Logging for debug - Can be removed in production
-    console.log(`Total lords: ${allLords.length}, Staked lords: ${stakedLords.length}`);
-    
-    stakedLords.forEach(lord => {
-      if (!lord.isStaked || !lord.stakingDuration) return;
+    const calculateLordRafflePower = (lord: {
+      isStaked: boolean;
+      stakingDuration?: number;
+      attributes: {
+        rank: string[];
+      };
+    }): number => {
+      if (!lord.isStaked || !lord.stakingDuration) return 0;
       
-      const ownerAddress = lord.owner.toLowerCase();
-      
-      // Initialize the staker's data if not already present
-      if (!stakerMap[ownerAddress]) {
-        stakerMap[ownerAddress] = { rafflePower: 0 };
-      }
-      
-      // Get the rarity and calculate tickets
       const rarity = lord.attributes.rank[0]?.toLowerCase() || '';
-      let tickets = 0;
+      const days = lord.stakingDuration;
       
+      // Calculate tickets based on rarity
+      let tickets = 0;
       switch (rarity) {
         case 'rare':
           tickets = 1;
@@ -62,14 +56,37 @@ export function useRaffle() {
           tickets = 0;
       }
       
-      // Add to the staker's raffle power
-      stakerMap[ownerAddress].rafflePower += tickets * lord.stakingDuration;
+      // Multiply tickets by days staked
+      return tickets * days;
+    };
+    
+    // Only consider staked lords
+    const stakedLords = allLords.filter(lord => lord.isStaked);
+    
+    stakedLords.forEach(lord => {
+      const ownerAddress = lord.owner.toLowerCase();
+      
+      if (!stakerMap[ownerAddress]) {
+        stakerMap[ownerAddress] = { rafflePower: 0 };
+      }
+      
+      stakerMap[ownerAddress].rafflePower += calculateLordRafflePower(lord);
     });
     
-    // Debug logging to check the processed data
-    console.log(`Found ${Object.keys(stakerMap).length} stakers with raffle power`);
-    
     return stakerMap;
+  }, [allLords]);
+  
+  // For debugging - get stakers data
+  const getStakersAddresses = useCallback(() => {
+    if (!allLords.length) return [];
+    
+    // Only consider staked lords
+    const stakedLords = allLords.filter(lord => lord.isStaked);
+    
+    // Get unique owner addresses
+    const uniqueOwners = new Set(stakedLords.map(lord => lord.owner.toLowerCase()));
+    
+    return Array.from(uniqueOwners);
   }, [allLords]);
   
   // Parse uploaded file (CSV or TXT)
@@ -121,12 +138,15 @@ export function useRaffle() {
       // Get stakers data with raffle power
       const stakersData = processStakersData();
       
-      // Log for debugging
-      console.log(`Found ${addresses.length} addresses in the uploaded file`);
+      // Get all stakers addresses for debugging
+      const allStakersAddresses = getStakersAddresses();
+      
+      // For debugging, check if addresses from the file match any known stakers
+      const foundAddresses = addresses.filter(addr => allStakersAddresses.includes(addr));
+      console.log(`Found ${foundAddresses.length} matching addresses out of ${addresses.length} uploaded`);
       
       // Map addresses to raffle power
       const participantsList: Participant[] = addresses.map(address => {
-        // Ensure addresses are always lowercase for comparison
         const normalizedAddress = address.toLowerCase();
         const rafflePower = stakersData[normalizedAddress]?.rafflePower || 0;
         
@@ -146,9 +166,6 @@ export function useRaffle() {
         percentage: totalRafflePower > 0 ? (p.rafflePower / totalRafflePower) * 100 : 0
       }));
       
-      // Sort by raffle power descending
-      participantsWithPercentage.sort((a, b) => b.rafflePower - a.rafflePower);
-      
       setParticipants(participantsWithPercentage);
       setIsProcessing(false);
       
@@ -157,7 +174,7 @@ export function useRaffle() {
       setFileError('Error parsing the file. Please ensure it is a valid file format.');
       setIsProcessing(false);
     }
-  }, [processStakersData]);
+  }, [processStakersData, getStakersAddresses]);
   
   // Conduct the raffle draw
   const conductRaffle = useCallback((numWinners: number) => {

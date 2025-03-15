@@ -133,6 +133,7 @@
   background-color: #e0e0e0;
   color: #666;
   border-radius: 0.25rem;
+  cursor: help;
 }
 
 .eligible-badge {
@@ -141,6 +142,16 @@
   background-color: var(--card-header-bg);
   color: var(--text-light);
   border-radius: 0.25rem;
+}
+
+.info-message {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: rgba(33, 150, 243, 0.1);
+  border-left: 4px solid #2196F3;
+  color: var(--text-light);
+  font-size: 0.9rem;
+  margin-top: 1rem;
 }
 
 /* Raffle Controls */
@@ -270,43 +281,12 @@
   margin-top: 2rem;
 }
 
-.winners-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-
 .winners-title {
   text-align: center;
   font-size: 1.5rem;
+  margin-bottom: 1.5rem;
   color: #FFD700;
   text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-  margin: 0;
-}
-
-.export-winners-btn {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 0.25rem;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.export-winners-btn::before {
-  content: "📋";
-}
-
-.export-winners-btn:hover {
-  background-color: #45a049;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .winners-list {
@@ -424,15 +404,5 @@
   
   .winner-info {
     align-items: center;
-  }
-  
-  .winners-header {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .export-winners-btn {
-    width: 100%;
-    justify-content: center;
   }
 }

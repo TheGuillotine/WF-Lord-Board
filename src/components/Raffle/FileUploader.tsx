@@ -61,12 +61,12 @@ export function FileUploader({ onFileUpload, isProcessing, fileError }: FileUplo
           type="file" 
           ref={fileInputRef}
           onChange={handleFileChange}
-          accept=".xlsx,.xls,.csv"
+          accept=".csv,.txt,.json"
           className="file-input"
         />
         
         <div className="upload-icon">
-          {isProcessing ? '⏳' : '📊'}
+          {isProcessing ? '⏳' : '📋'}
         </div>
         
         <div className="upload-text">
@@ -76,8 +76,8 @@ export function FileUploader({ onFileUpload, isProcessing, fileError }: FileUplo
             <span>File selected: <strong>{fileName}</strong></span>
           ) : (
             <>
-              <span>Drop your Excel file here, or <strong>click to select</strong></span>
-              <span className="upload-hint">Accepts .xlsx, .xls, .csv with wallet addresses</span>
+              <span>Drop your file with wallet addresses here, or <strong>click to select</strong></span>
+              <span className="upload-hint">Accepts CSV, TXT, or any file containing wallet addresses</span>
             </>
           )}
         </div>

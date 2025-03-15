@@ -34,6 +34,11 @@ export function StakersList({ stakers, loading }: StakersListProps) {
   const formatAddress = (address: string) => {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
+  
+  // Format large numbers with thousands separators
+  const formatNumber = (num: number) => {
+    return num.toLocaleString();
+  };
 
   const renderHeader = () => (
     <div className="card-header">
@@ -71,11 +76,13 @@ export function StakersList({ stakers, loading }: StakersListProps) {
                 <th>Legendary Lords</th>
                 <th>Mystic Lords</th>
                 <th>Total Lords</th>
+                <th className="raffle-power-col">Raffle Power</th>
               </tr>
             </thead>
             <tbody>
               {Array.from({ length: 10 }).map((_, index) => (
                 <tr key={index} className="skeleton-row">
+                  <td><div className="skeleton-line"></div></td>
                   <td><div className="skeleton-line"></div></td>
                   <td><div className="skeleton-line"></div></td>
                   <td><div className="skeleton-line"></div></td>
@@ -118,6 +125,20 @@ export function StakersList({ stakers, loading }: StakersListProps) {
               <th>Legendary Lords</th>
               <th>Mystic Lords</th>
               <th>Total Lords</th>
+              <th className="raffle-power-col">
+                <div className="tooltip">
+                  Raffle Power
+                  <span className="tooltip-text">
+                    <strong>Raffle Power Calculation:</strong><br />
+                    • Rare: 1 ticket × days staked<br />
+                    • Epic: 2 tickets × days staked<br />
+                    • Legendary: 4 tickets × days staked<br />
+                    • Mystic: 8 tickets × days staked<br />
+                    <br />
+                    Higher raffle power = better chances in raffles
+                  </span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -138,6 +159,7 @@ export function StakersList({ stakers, loading }: StakersListProps) {
                 <td className="legendary">{staker.legendaryLords}</td>
                 <td className="mystic">{staker.mysticLords}</td>
                 <td className="total">{staker.totalLords}</td>
+                <td className="raffle-power">{formatNumber(staker.rafflePower)}</td>
               </tr>
             ))}
           </tbody>

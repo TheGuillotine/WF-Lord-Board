@@ -1,8 +1,11 @@
 {
-    "functions": {
-      "src/pages/api/*.ts": {
-        "maxDuration": 30,
-        "memory": 1024
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next",
+      "config": {
+        "installCommand": "pnpm install --no-frozen-lockfile"
       }
     }
-  }
+  ]
+}

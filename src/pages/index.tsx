@@ -1,6 +1,6 @@
 import React from 'react';
 import Head from 'next/head';
-import { Layout } from '../components/Layout/Layout';
+import { EnhancedLayout } from '../components/Layout/EnhancedLayout';
 import { StakingStats } from '../components/Dashboard/StakingStats';
 import { FilterControls } from '../components/Dashboard/FilterControls';
 import { LordsList } from '../components/Dashboard/LordsList';
@@ -27,9 +27,10 @@ export default function Home() {
         <link rel="icon" href="/images/favicon.ico" />
       </Head>
 
-      <Layout>
+      <EnhancedLayout>
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary-light mb-2"></h1>
+          <h1 className="text-3xl font-bold text-primary-light mb-2">Lords List</h1>
+          <p className="text-light-alt">Track staking statistics for Wild Forest Lords NFTs</p>
         </div>
 
         {error && (
@@ -56,7 +57,7 @@ export default function Home() {
           loading={loading} 
           isFetchingMore={isFetchingMore} 
         />
-      </Layout>
+      </EnhancedLayout>
     </>
   );
 }

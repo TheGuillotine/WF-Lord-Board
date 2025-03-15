@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StakerData } from '../../hooks/useStakersData';
+import { useExportStakers } from '../../hooks/useExportStakers';
 
 interface StakersListProps {
   stakers: StakerData[];
@@ -12,6 +13,7 @@ export function StakersList({ stakers, loading }: StakersListProps) {
   const [filteredStakers, setFilteredStakers] = useState<StakerData[]>(stakers);
   
   const itemsPerPage = 25;
+  const exportStakers = useExportStakers();
 
   useEffect(() => {
     if (searchTerm === '') {
@@ -39,6 +41,11 @@ export function StakersList({ stakers, loading }: StakersListProps) {
   const formatNumber = (num: number) => {
     return num.toLocaleString();
   };
+  
+  const handleExport = () => {
+    // Export all stakers data, not just the current page
+    exportStakers(searchTerm ? filteredStakers : stakers);
+  };
 
   const renderHeader = () => (
     <div className="card-header">
@@ -49,7 +56,7 @@ export function StakersList({ stakers, loading }: StakersListProps) {
             : `Showing ${indexOfFirstItem + 1}-${Math.min(indexOfLastItem, filteredStakers.length)} of ${filteredStakers.length} Stakers`}
         </div>
         
-        <div className="header-controls w-full md:w-auto">
+        <div className="header-controls w-full md:w-auto flex flex-col md:flex-row gap-2">
           <input
             type="text"
             placeholder="Search by address..."
@@ -57,6 +64,17 @@ export function StakersList({ stakers, loading }: StakersListProps) {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          
+          <button
+            className="btn btn-secondary export-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleExport();
+            }}
+            disabled={loading || stakers.length === 0}
+          >
+            Export to CSV
+          </button>
         </div>
       </div>
     </div>

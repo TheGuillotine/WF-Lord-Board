@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Participant } from '../../hooks/useRaffle';
+import { exportWinnersToCSV } from '../../utils/exportWinners';
 
 interface RaffleControlsProps {
   participants: Participant[];
@@ -35,6 +36,10 @@ export function RaffleControls({
   
   const handleStartRaffle = () => {
     onConductRaffle(numWinners);
+  };
+  
+  const handleExportWinners = () => {
+    exportWinnersToCSV(winners);
   };
   
   if (participants.length === 0) {
@@ -93,7 +98,16 @@ export function RaffleControls({
       
       {raffleComplete && winners.length > 0 && (
         <div className="winners-display">
-          <h3 className="winners-title">🏆 Winners 🏆</h3>
+          <div className="winners-header">
+            <h3 className="winners-title">🏆 Winners 🏆</h3>
+            <button
+              className="export-winners-btn"
+              onClick={handleExportWinners}
+              title="Export winners to CSV"
+            >
+              Export Winners
+            </button>
+          </div>
           
           <div className="winners-list">
             {winners.map((winner, index) => (

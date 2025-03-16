@@ -13,7 +13,7 @@ export function Navigation() {
     <nav className="main-nav">
       <ul className="nav-links">
         <li className={`nav-item ${isActive('/')}`}>
-          <Link href="/">
+          <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="nav-button">
               <span className="nav-icon">📋</span>
               <span className="nav-text">Lords List</span>
@@ -21,7 +21,7 @@ export function Navigation() {
           </Link>
         </li>
         <li className={`nav-item ${isActive('/stakers')}`}>
-          <Link href="/stakers">
+          <Link href="/stakers" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="nav-button">
               <span className="nav-icon">👥</span>
               <span className="nav-text">Stakers Data</span>
@@ -29,7 +29,7 @@ export function Navigation() {
           </Link>
         </li>
         <li className={`nav-item ${isActive('/raffle')}`}>
-          <Link href="/raffle">
+          <Link href="/raffle" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="nav-button">
               <span className="nav-icon">🎲</span>
               <span className="nav-text">Organize a Raffle</span>

@@ -98,16 +98,7 @@ export function RaffleControls({
       
       {raffleComplete && winners.length > 0 && (
         <div className="winners-display">
-          <div className="winners-header">
-            <h3 className="winners-title">🏆 Winners 🏆</h3>
-            <button
-              className="export-winners-btn"
-              onClick={handleExportWinners}
-              title="Export winners to CSV"
-            >
-              Export Winners
-            </button>
-          </div>
+          <h3 className="winners-title">🏆 Winners 🏆</h3>
           
           <div className="winners-list">
             {winners.map((winner, index) => (
@@ -136,8 +127,58 @@ export function RaffleControls({
               </div>
             ))}
           </div>
+          
+          <div className="export-winners-container">
+            <button
+              className="export-winners-btn"
+              onClick={handleExportWinners}
+              title="Export winners to CSV"
+            >
+              <span className="export-icon">📋</span>
+              Export Winners to CSV
+            </button>
+          </div>
         </div>
       )}
+      
+      <style jsx>{`
+        .export-winners-container {
+          display: flex;
+          justify-content: center;
+          margin-top: 1.5rem;
+        }
+        
+        .export-winners-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1.5rem;
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .export-winners-btn:hover {
+          background-color: #45a049;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .export-winners-btn:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .export-icon {
+          font-size: 1.2rem;
+        }
+      `}</style>
     </div>
   );
 }

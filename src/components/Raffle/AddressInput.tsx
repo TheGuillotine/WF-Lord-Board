@@ -9,14 +9,24 @@ interface AddressInputProps {
 export function AddressInput({ onSubmitAddresses, isProcessing, error }: AddressInputProps) {
   const [addressText, setAddressText] = useState('');
   const [addressCount, setAddressCount] = useState(0);
+  const [uniqueAddressCount, setUniqueAddressCount] = useState(0);
+  const [lineCount, setLineCount] = useState(0);
   
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setAddressText(text);
     
-    // Count potential addresses by looking for 0x pattern
-    const matches = text.match(/0x[a-fA-F0-9]{40}/gi);
-    setAddressCount(matches ? matches.length : 0);
+    // Count lines
+    const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+    setLineCount(lines.length);
+    
+    // Extract and count Ethereum addresses
+    const extractedAddresses = extractAddresses(text);
+    setAddressCount(extractedAddresses.length);
+    
+    // Count unique addresses
+    const uniqueAddresses = [...new Set(extractedAddresses)];
+    setUniqueAddressCount(uniqueAddresses.length);
   };
   
   const extractAddresses = (text: string): string[] => {
@@ -39,6 +49,46 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
     // Remove duplicates
     const uniqueAddresses = [...new Set(extractedAddresses)];
     
+    // Log details for debugging
+    console.log(`Lines detected: ${lineCount}`);
+    console.log(`Total addresses extracted: ${extractedAddresses.length}`);
+    console.log(`Unique addresses: ${uniqueAddresses.length}`);
+    
+    if (extractedAddresses.length < lineCount) {
+      console.log("Some lines don't contain valid Ethereum addresses");
+      // Debug: Log the first 5 lines that don't have addresses
+      const lines = addressText.split(/\r?\n/).filter(line => line.trim() !== '');
+      const linesWithoutAddresses = lines.filter(line => {
+        const hasAddress = /0x[a-fA-F0-9]{40}/i.test(line);
+        return !hasAddress && line.trim() !== '';
+      });
+      
+      console.log("Sample lines without valid addresses:");
+      linesWithoutAddresses.slice(0, 5).forEach((line, i) => {
+        console.log(`Line ${i+1}: "${line}"`);
+      });
+    }
+    
+    if (uniqueAddresses.length < extractedAddresses.length) {
+      console.log(`Found ${extractedAddresses.length - uniqueAddresses.length} duplicate addresses`);
+      
+      // Create a frequency map
+      const addressCount: Record<string, number> = {};
+      extractedAddresses.forEach(addr => {
+        addressCount[addr] = (addressCount[addr] || 0) + 1;
+      });
+      
+      // Find duplicates
+      const duplicates = Object.entries(addressCount)
+        .filter(([_, count]) => count > 1)
+        .map(([addr, count]) => ({ address: addr, count }));
+      
+      console.log("Duplicate addresses:");
+      duplicates.slice(0, 5).forEach(dup => {
+        console.log(`${dup.address} appears ${dup.count} times`);
+      });
+    }
+    
     // Submit the addresses
     onSubmitAddresses(uniqueAddresses);
   };
@@ -56,8 +106,16 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
         />
         
         <div className="address-count">
-          {addressCount > 0 && (
-            <span>Detected {addressCount} address{addressCount !== 1 ? 'es' : ''}</span>
+          {lineCount > 0 && (
+            <div className="count-details">
+              <div>Lines: {lineCount}</div>
+              <div>Addresses found: {addressCount}</div>
+              {addressCount !== uniqueAddressCount && (
+                <div className="warning">
+                  Unique addresses: {uniqueAddressCount} ({addressCount - uniqueAddressCount} duplicates will be removed)
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -67,7 +125,7 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
       <button
         className="btn btn-primary mt-4"
         onClick={handleSubmit}
-        disabled={isProcessing || addressCount === 0}
+        disabled={isProcessing || uniqueAddressCount === 0}
       >
         {isProcessing ? 'Processing...' : 'Prepare Raffle'}
       </button>
@@ -98,6 +156,17 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
           font-size: 0.875rem;
           color: #666;
           text-align: right;
+        }
+        
+        .count-details {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          justify-content: flex-end;
+        }
+        
+        .warning {
+          color: #e67e22;
         }
         
         .error-message {

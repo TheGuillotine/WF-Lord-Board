@@ -183,7 +183,7 @@ export function useRaffle() {
     }
   }, [getRafflePowerByAddress, getAllAddressesInSystem]);
   
-  // Parse uploaded file (CSV or TXT) - kept for backward compatibility
+  // Parse uploaded TXT file
   const parseFile = useCallback(async (file: File) => {
     setFileError(null);
     setIsProcessing(true);
@@ -191,19 +191,62 @@ export function useRaffle() {
     setWinners([]);
     
     try {
-      // Read file
+      // Verify it's a text file
+      if (!file.name.toLowerCase().endsWith('.txt') && file.type !== 'text/plain') {
+        setFileError('Only .txt files are supported. Please upload a text file or paste addresses directly.');
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Read the file text
       const text = await file.text();
       
-      // Extract addresses using regex
-      const regex = /0x[a-fA-F0-9]{40}/gi;
-      const matches = text.match(regex) || [];
+      // Split by lines and extract Ethereum addresses
+      const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+      console.log(`Found ${lines.length} lines in the text file`);
+      
+      const addresses: string[] = [];
+      const invalidLines: string[] = [];
+      
+      // Look for Ethereum addresses in each line
+      lines.forEach(line => {
+        const trimmedLine = line.trim();
+        
+        // Check if the line is a valid Ethereum address
+        if (/^0x[a-fA-F0-9]{40}$/i.test(trimmedLine)) {
+          addresses.push(trimmedLine);
+        } else {
+          // Try to extract an Ethereum address from the line
+          const match = trimmedLine.match(/0x[a-fA-F0-9]{40}/i);
+          if (match) {
+            addresses.push(match[0]);
+          } else {
+            invalidLines.push(trimmedLine);
+          }
+        }
+      });
+      
+      if (invalidLines.length > 0) {
+        console.log(`Found ${invalidLines.length} invalid lines in the text file`);
+        invalidLines.slice(0, 5).forEach((line, i) => {
+          console.log(`Invalid line ${i+1}: "${line}"`);
+        });
+      }
+      
+      if (addresses.length === 0) {
+        setFileError('No valid Ethereum addresses found in the file.');
+        setIsProcessing(false);
+        return;
+      }
+      
+      console.log(`Successfully extracted ${addresses.length} Ethereum addresses`);
       
       // Process the extracted addresses
-      processAddresses(matches);
+      processAddresses(addresses);
       
     } catch (err) {
       console.error('Error parsing file:', err);
-      setFileError('Error parsing the file. Please try pasting addresses directly instead.');
+      setFileError('Error parsing the file. Please check that it contains valid Ethereum addresses, one per line.');
       setIsProcessing(false);
     }
   }, [processAddresses]);
@@ -276,8 +319,8 @@ export function useRaffle() {
   return {
     participants,
     winners,
-    parseExcelFile: parseFile, // renamed but kept the same function name for compatibility
-    processAddresses, // New function for direct address input
+    parseExcelFile: parseFile, // kept same function name for compatibility
+    processAddresses, // For direct address input
     conductRaffle,
     isProcessing,
     isDrawing,

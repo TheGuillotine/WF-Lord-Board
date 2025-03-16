@@ -106,138 +106,46 @@ export function useRaffle() {
     return totalRafflePower;
   }, [allLords]);
   
-  // Enhanced function to extract and normalize Ethereum addresses
-  const extractAddresses = (text: string): string[] => {
-    const addresses: string[] = [];
-    
-    // Extremely thorough normalization function
-    const normalizeAddress = (addr: string): string => {
-      return addr.toLowerCase().trim()
-        .replace(/\s+/g, '') // Remove all whitespace
-        .replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width spaces and BOM
-    };
-    
-    // First attempt with standard regex
-    const ethAddressRegex = /0x[a-fA-F0-9]{40}/gi;
-    const matches = text.match(ethAddressRegex);
-    
-    if (matches) {
-      // Normalize addresses
-      matches.forEach(address => {
-        addresses.push(normalizeAddress(address));
-      });
-    }
-    
-    return addresses;
-  };
-  
-  // Parse uploaded file (CSV or TXT)
-  const parseFile = useCallback(async (file: File) => {
+  // Process addresses pasted directly into the text area
+  const processAddresses = useCallback((addresses: string[]) => {
     setFileError(null);
     setIsProcessing(true);
     setRaffleComplete(false);
     setWinners([]);
     
     try {
-      // Read file
-      const text = await file.text();
-      console.log(`File type: ${file.type}, File name: ${file.name}`);
+      console.log(`Processing ${addresses.length} addresses`);
       
       // Get all system addresses for validation
       const systemAddresses = getAllAddressesInSystem();
       console.log(`Total addresses in system: ${systemAddresses.size}`);
       
-      // For debug: Log a sample of addresses in the system
-      const sampleAddresses = Array.from(systemAddresses).slice(0, 5);
-      console.log('Sample system addresses:', sampleAddresses);
-      
-      // Parse the content
-      let extractedAddresses: string[] = [];
-      
-      // Log a sample of the file content for debugging
-      console.log('File content sample:', text.substring(0, 200));
-      
-      // Detect file type
-      const isCSV = file.type === 'text/csv' || file.name.endsWith('.csv');
-      
-      if (isCSV) {
-        console.log('Processing as CSV file');
-        
-        // Remove any BOM characters that might be present in the file
-        const cleanText = text.replace(/^\uFEFF/, '');
-        
-        // Split by lines
-        const lines = cleanText.split(/\r?\n/);
-        console.log(`CSV has ${lines.length} lines`);
-        
-        // Process each line
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue; // Skip empty lines
-          
-          // Log first few lines for debugging
-          if (i < 5) {
-            console.log(`Line ${i+1}: "${line}"`);
-          }
-          
-          // Direct address extraction from the line using regex
-          const lineAddresses = extractAddresses(line);
-          if (lineAddresses.length > 0) {
-            extractedAddresses = [...extractedAddresses, ...lineAddresses];
-            if (i < 5) {
-              console.log(`Found addresses in line ${i+1}:`, lineAddresses);
-            }
-          } else {
-            // If no direct matches, try splitting the line
-            const parts = line.split(/[,;\t]/);
-            for (const part of parts) {
-              const cleanPart = part.trim()
-                .replace(/^["'](.*)["']$/, '$1') // Remove quotes
-                .replace(/\s+/g, ''); // Remove all whitespace
-              
-              // Skip empty parts
-              if (!cleanPart) continue;
-              
-              // Check if this part looks like an Ethereum address
-              if (/^0x[a-fA-F0-9]{40}$/i.test(cleanPart)) {
-                const normalizedAddress = cleanPart.toLowerCase();
-                extractedAddresses.push(normalizedAddress);
-                if (i < 5) {
-                  console.log(`Found address in part of line ${i+1}: ${normalizedAddress}`);
-                }
-              }
-            }
-          }
-        }
-      } else {
-        console.log('Processing as plain text file');
-        // For non-CSV, extract all Ethereum addresses using regex
-        extractedAddresses = extractAddresses(text);
-      }
-      
-      // Deduplicate addresses
-      const uniqueAddresses = [...new Set(extractedAddresses)];
-      console.log(`Found ${uniqueAddresses.length} unique addresses in the file`);
-      
-      // For debug: Log the first few extracted addresses
-      console.log('First few extracted addresses:', uniqueAddresses.slice(0, 5));
-      
-      // IMPORTANT VERIFICATION STEP: Check if addresses are found in system
-      for (let i = 0; i < Math.min(10, uniqueAddresses.length); i++) {
-        const address = uniqueAddresses[i];
-        const found = systemAddresses.has(address);
-        console.log(`Address ${i+1}: ${address} - Found in system: ${found}`);
-      }
-      
-      if (uniqueAddresses.length === 0) {
-        setFileError('No valid wallet addresses found in the file');
+      if (addresses.length === 0) {
+        setFileError('No valid wallet addresses provided');
         setIsProcessing(false);
         return;
       }
       
+      // Normalize addresses for consistency
+      const normalizeAddress = (addr: string): string => {
+        return addr.toLowerCase().trim()
+          .replace(/\s+/g, '') // Remove all whitespace
+          .replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width spaces and BOM
+      };
+      
+      // Normalize all addresses
+      const normalizedAddresses = addresses.map(addr => normalizeAddress(addr));
+      
+      // IMPORTANT VERIFICATION STEP: Check if addresses are found in system
+      for (let i = 0; i < Math.min(10, normalizedAddresses.length); i++) {
+        const address = normalizedAddresses[i];
+        const found = systemAddresses.has(address);
+        console.log(`Address ${i+1}: ${address} - Found in system: ${found}`);
+      }
+      
       // Calculate raffle power for each address using the same exact method as in Stakers Data page
       console.log('Calculating raffle power for each address...');
-      const participantsList: Participant[] = uniqueAddresses.map(address => {
+      const participantsList: Participant[] = normalizedAddresses.map(address => {
         console.log(`Processing address: ${address}`);
         const rafflePower = getRafflePowerByAddress(address);
         return {
@@ -269,11 +177,36 @@ export function useRaffle() {
       setIsProcessing(false);
       
     } catch (err) {
-      console.error('Error parsing file:', err);
-      setFileError('Error parsing the file. Please ensure it is a valid file format.');
+      console.error('Error processing addresses:', err);
+      setFileError('Error processing addresses. Please try again.');
       setIsProcessing(false);
     }
   }, [getRafflePowerByAddress, getAllAddressesInSystem]);
+  
+  // Parse uploaded file (CSV or TXT) - kept for backward compatibility
+  const parseFile = useCallback(async (file: File) => {
+    setFileError(null);
+    setIsProcessing(true);
+    setRaffleComplete(false);
+    setWinners([]);
+    
+    try {
+      // Read file
+      const text = await file.text();
+      
+      // Extract addresses using regex
+      const regex = /0x[a-fA-F0-9]{40}/gi;
+      const matches = text.match(regex) || [];
+      
+      // Process the extracted addresses
+      processAddresses(matches);
+      
+    } catch (err) {
+      console.error('Error parsing file:', err);
+      setFileError('Error parsing the file. Please try pasting addresses directly instead.');
+      setIsProcessing(false);
+    }
+  }, [processAddresses]);
   
   // Conduct the raffle draw
   const conductRaffle = useCallback((numWinners: number) => {
@@ -344,6 +277,7 @@ export function useRaffle() {
     participants,
     winners,
     parseExcelFile: parseFile, // renamed but kept the same function name for compatibility
+    processAddresses, // New function for direct address input
     conductRaffle,
     isProcessing,
     isDrawing,

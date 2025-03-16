@@ -58,9 +58,9 @@ export default function RafflePage() {
             <div className="divider">OR</div>
             
             <details className="legacy-uploader">
-              <summary>Upload a file instead</summary>
+              <summary>Upload a text file instead</summary>
               <p className="text-sm text-light-alt mb-2">
-                If you prefer, you can upload a text file or CSV containing wallet addresses.
+                If you prefer, you can upload a plain text (.txt) file with one wallet address per line.
               </p>
               <FileUploader
                 onFileUpload={parseExcelFile}

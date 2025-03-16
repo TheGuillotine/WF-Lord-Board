@@ -65,6 +65,24 @@ export function useRaffle() {
     return totalRafflePower;
   }, [allLords]);
   
+  // Enhanced function to extract Ethereum addresses from text
+  const extractAddresses = (text: string): string[] => {
+    const addresses: string[] = [];
+    // Regex to match Ethereum addresses (case insensitive)
+    const ethAddressRegex = /0x[a-fA-F0-9]{40}/gi;
+    
+    // Find all matches in the text
+    const matches = text.match(ethAddressRegex);
+    if (matches) {
+      // Normalize addresses (lowercase and trim)
+      matches.forEach(address => {
+        addresses.push(address.toLowerCase().trim());
+      });
+    }
+    
+    return addresses;
+  };
+  
   // Parse uploaded file (CSV or TXT)
   const parseFile = useCallback(async (file: File) => {
     setFileError(null);
@@ -77,39 +95,68 @@ export function useRaffle() {
       const text = await file.text();
       
       // Parse the content
-      const addresses: string[] = [];
+      let addresses: string[] = [];
       
       // We'll handle both CSV and plain text formats
       if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
-        // Split by lines and look for addresses
-        const lines = text.split(/\r?\n/);
-        lines.forEach(line => {
-          // Split line by common delimiters (comma, semicolon, tab)
-          const parts = line.split(/[,;\t]/);
-          
-          // Look for ethereum addresses (0x followed by 40 hex chars)
-          parts.forEach(part => {
-            const trimmed = part.trim().replace(/^[\"'](.*)[\"']$/, '$1'); // Remove quotes
-            if (/^0x[a-fA-F0-9]{40}$/i.test(trimmed)) {
-              // Normalize address by converting to lowercase and trimming whitespace
-              addresses.push(trimmed.toLowerCase().trim());
-            }
-          });
-        });
-      } else {
-        // For non-CSV, extract all Ethereum addresses from the text
-        const regex = /0x[a-fA-F0-9]{40}/gi;
-        const matches = text.match(regex);
+        // Check if it's a CSV file from Excel which might have special formatting
+        const isExcelCsv = text.includes('\r') || text.includes('"');
         
-        if (matches) {
-          // Normalize each address by converting to lowercase and trimming whitespace
-          const normalizedAddresses = matches.map(addr => addr.toLowerCase().trim());
-          addresses.push(...normalizedAddresses);
+        // Remove any BOM characters that might be present in the file
+        const cleanText = text.replace(/^\uFEFF/, '');
+        
+        // Split by lines
+        const lines = cleanText.split(/\r?\n/);
+        
+        for (const line of lines) {
+          if (!line.trim()) continue; // Skip empty lines
+          
+          let lineParts: string[] = [];
+          
+          // Handle quoted fields (especially important for Excel CSV files)
+          if (isExcelCsv && line.includes('"')) {
+            // More complex parsing for Excel-style CSV with quoted fields
+            const regex = /"([^"]*)"|\s*(,)\s*|([^,]+)/g;
+            let match;
+            
+            while ((match = regex.exec(line)) !== null) {
+              if (match[1] !== undefined) {
+                // This is a quoted field
+                lineParts.push(match[1]);
+              } else if (match[3] !== undefined) {
+                // This is an unquoted field
+                lineParts.push(match[3]);
+              }
+              // Ignore the comma separators
+            }
+          } else {
+            // Simple splitting for standard CSV
+            lineParts = line.split(/[,;\t]/);
+          }
+          
+          // Process each part to find Ethereum addresses
+          for (const part of lineParts) {
+            if (!part.trim()) continue;
+            
+            // Remove quotes and trim whitespace
+            const cleanPart = part.trim().replace(/^["'](.*)["']$/, '$1');
+            
+            // Look for Ethereum addresses in this part
+            const partAddresses = extractAddresses(cleanPart);
+            if (partAddresses.length > 0) {
+              addresses = [...addresses, ...partAddresses];
+            }
+          }
         }
+      } else {
+        // For non-CSV, simply extract all Ethereum addresses from the text
+        addresses = extractAddresses(text);
       }
       
       // Deduplicate addresses (in case there are duplicates in the file)
       const uniqueAddresses = [...new Set(addresses)];
+      
+      console.log(`Found ${uniqueAddresses.length} unique addresses in the file`);
       
       if (uniqueAddresses.length === 0) {
         setFileError('No valid wallet addresses found in the file');

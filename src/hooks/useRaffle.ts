@@ -17,17 +17,40 @@ export function useRaffle() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [raffleComplete, setRaffleComplete] = useState(false);
   
+  // Extremely thorough normalization function used consistently throughout
+  const normalizeAddress = (addr: string): string => {
+    if (!addr) return '';
+    
+    return addr.toLowerCase().trim()
+      .replace(/\s+/g, '') // Remove all whitespace
+      .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces and BOM
+      .replace(/[^a-f0-9x]/gi, ''); // Remove any non-hex characters (extra safety)
+  };
+  
   // Get a list of all addresses in the system for validation purposes
   const getAllAddressesInSystem = useCallback(() => {
     const addresses = new Set<string>();
     
+    // Create a map of normalized addresses to original addresses for debug purposes
+    const addressMap = new Map<string, string>();
+    
     allLords.forEach(lord => {
       if (lord.isStaked && lord.owner) {
-        // Store address in normalized form (lowercase, trimmed)
-        addresses.add(lord.owner.toLowerCase().trim());
+        // Store address in normalized form
+        const normalizedAddr = normalizeAddress(lord.owner);
+        addresses.add(normalizedAddr);
+        addressMap.set(normalizedAddr, lord.owner);
       }
     });
     
+    // Log the first few addresses for debugging
+    console.log("Sample addresses in system:");
+    const sampleAddrs = Array.from(addressMap.entries()).slice(0, 5);
+    sampleAddrs.forEach(([normalized, original]) => {
+      console.log(`Original: ${original}, Normalized: ${normalized}`);
+    });
+    
+    console.log(`Total unique addresses in system: ${addresses.size}`);
     return addresses;
   }, [allLords]);
   
@@ -35,36 +58,66 @@ export function useRaffle() {
   const getRafflePowerByAddress = useCallback((targetAddress: string) => {
     if (!allLords.length) return 0;
     
-    // Extra aggressive normalization to handle potential encoding issues
-    const normalizeAddress = (addr: string): string => {
-      return addr.toLowerCase().trim()
-        .replace(/\s+/g, '') // Remove all whitespace
-        .replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width spaces and BOM
-    };
-    
-    // Normalize the target address
+    // Normalize the target address with our consistent function
     const normalizedTargetAddress = normalizeAddress(targetAddress);
     
-    // Debug output
-    console.log(`Looking for raffle power for address: ${targetAddress} (normalized: ${normalizedTargetAddress})`);
+    // Prepare for alternative matching approaches if needed
+    const originalTarget = targetAddress.trim();
     
-    // Filter only staked lords owned by this address
+    // Debug output
+    console.log(`Looking for raffle power for address: ${originalTarget}`);
+    console.log(`Normalized as: ${normalizedTargetAddress}`);
+    
+    if (!normalizedTargetAddress || !normalizedTargetAddress.startsWith('0x') || normalizedTargetAddress.length !== 42) {
+      console.log(`Invalid address format: ${normalizedTargetAddress}`);
+      return 0;
+    }
+    
+    // Filter only staked lords owned by this address with more flexible matching
     const addressLords = allLords.filter(lord => {
       if (!lord.isStaked || !lord.owner) return false;
       
+      // Try multiple matching approaches
       const normalizedOwner = normalizeAddress(lord.owner);
+      
+      // Check if normalized addresses match (primary approach)
       const isMatch = normalizedOwner === normalizedTargetAddress;
       
+      // Check if case-insensitive addresses match (secondary approach)
+      const caseInsensitiveMatch = !isMatch && 
+        lord.owner.toLowerCase() === targetAddress.toLowerCase();
+      
+      // Check if non-normalized addresses match (tertiary approach)
+      const originalMatch = !isMatch && !caseInsensitiveMatch && 
+        lord.owner.trim() === originalTarget;
+      
+      const finalMatch = isMatch || caseInsensitiveMatch || originalMatch;
+      
       // Debug output for troubleshooting
-      if (isMatch) {
-        console.log(`Found match: ${lord.tokenId} owned by ${lord.owner} (normalized: ${normalizedOwner})`);
+      if (finalMatch) {
+        console.log(`Found match: ${lord.tokenId} owned by ${lord.owner}`);
+        console.log(`Matched using: ${isMatch ? 'normalized' : (caseInsensitiveMatch ? 'case-insensitive' : 'original')}`);
       }
       
-      return isMatch;
+      return finalMatch;
     });
     
     // Debug output
     console.log(`Found ${addressLords.length} staked lords for address ${normalizedTargetAddress}`);
+    
+    if (addressLords.length === 0) {
+      console.log(`WARNING: No staked lords found for address ${normalizedTargetAddress}`);
+      
+      // Log some system addresses for comparison
+      const systemAddrs = getAllAddressesInSystem();
+      console.log(`System has ${systemAddrs.size} unique addresses`);
+      
+      // Check if the address is in the system
+      const isInSystem = systemAddrs.has(normalizedTargetAddress);
+      console.log(`Is address in system: ${isInSystem}`);
+      
+      return 0;
+    }
     
     // Calculate total raffle power for this address
     let totalRafflePower = 0;
@@ -104,7 +157,7 @@ export function useRaffle() {
     
     console.log(`Total raffle power for ${normalizedTargetAddress}: ${totalRafflePower}`);
     return totalRafflePower;
-  }, [allLords]);
+  }, [allLords, getAllAddressesInSystem]);
   
   // Process addresses pasted directly into the text area
   const processAddresses = useCallback((addresses: string[]) => {
@@ -126,21 +179,23 @@ export function useRaffle() {
         return;
       }
       
-      // Normalize addresses for consistency
-      const normalizeAddress = (addr: string): string => {
-        return addr.toLowerCase().trim()
-          .replace(/\s+/g, '') // Remove all whitespace
-          .replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width spaces and BOM
-      };
-      
       // Normalize all addresses
       const normalizedAddresses = addresses.map(addr => normalizeAddress(addr));
       
       // IMPORTANT VERIFICATION STEP: Check if addresses are found in system
+      let addressesFoundInSystem = 0;
       for (let i = 0; i < Math.min(10, normalizedAddresses.length); i++) {
         const address = normalizedAddresses[i];
         const found = systemAddresses.has(address);
+        if (found) addressesFoundInSystem++;
         console.log(`Address ${i+1}: ${address} - Found in system: ${found}`);
+      }
+      
+      console.log(`Of first 10 addresses, ${addressesFoundInSystem} found in system`);
+      
+      if (addressesFoundInSystem === 0 && normalizedAddresses.length > 0) {
+        console.log("WARNING: None of the first 10 addresses were found in the system!");
+        console.log("This suggests a potential mismatch in address formats.");
       }
       
       // Calculate raffle power for each address using the same exact method as in Stakers Data page
@@ -157,9 +212,15 @@ export function useRaffle() {
       });
       
       // Log results for verification
-      participantsList.slice(0, 5).forEach((p, i) => {
-        console.log(`Participant ${i+1}: ${p.address} - Raffle Power: ${p.rafflePower}`);
+      let zeroRafflePowerCount = 0;
+      participantsList.forEach((p, i) => {
+        if (i < 5 || p.rafflePower > 0) {
+          console.log(`Participant ${i+1}: ${p.address} - Raffle Power: ${p.rafflePower}`);
+        }
+        if (p.rafflePower === 0) zeroRafflePowerCount++;
       });
+      
+      console.log(`Total participants with zero raffle power: ${zeroRafflePowerCount}/${participantsList.length}`);
       
       // Calculate percentage for each participant
       const totalRafflePower = participantsList.reduce((sum, p) => sum + p.rafflePower, 0);
@@ -181,7 +242,7 @@ export function useRaffle() {
       setFileError('Error processing addresses. Please try again.');
       setIsProcessing(false);
     }
-  }, [getRafflePowerByAddress, getAllAddressesInSystem]);
+  }, [getRafflePowerByAddress, getAllAddressesInSystem, normalizeAddress]);
   
   // Parse uploaded TXT file
   const parseFile = useCallback(async (file: File) => {
@@ -200,10 +261,23 @@ export function useRaffle() {
       
       // Read the file text
       const text = await file.text();
+      console.log(`File encoding appears to be: ${detectEncoding(text)}`);
+      
+      // Check for and remove UTF-8 BOM if present
+      const cleanText = text.replace(/^\uFEFF/, '');
+      if (text !== cleanText) {
+        console.log("UTF-8 BOM detected and removed");
+      }
       
       // Split by lines and extract Ethereum addresses
-      const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+      const lines = cleanText.split(/\r?\n/).filter(line => line.trim() !== '');
       console.log(`Found ${lines.length} lines in the text file`);
+      
+      // Log a small sample of the raw lines for debugging
+      console.log("Sample lines from file:");
+      lines.slice(0, 5).forEach((line, i) => {
+        console.log(`Line ${i+1}: "${line}"`);
+      });
       
       const addresses: string[] = [];
       const invalidLines: string[] = [];
@@ -212,17 +286,14 @@ export function useRaffle() {
       lines.forEach(line => {
         const trimmedLine = line.trim();
         
-        // Check if the line is a valid Ethereum address
-        if (/^0x[a-fA-F0-9]{40}$/i.test(trimmedLine)) {
-          addresses.push(trimmedLine);
+        // Check if the line is a valid Ethereum address or contains one
+        const ethAddressRegex = /0x[a-fA-F0-9]{40}/i;
+        const match = trimmedLine.match(ethAddressRegex);
+        
+        if (match) {
+          addresses.push(match[0]);
         } else {
-          // Try to extract an Ethereum address from the line
-          const match = trimmedLine.match(/0x[a-fA-F0-9]{40}/i);
-          if (match) {
-            addresses.push(match[0]);
-          } else {
-            invalidLines.push(trimmedLine);
-          }
+          invalidLines.push(trimmedLine);
         }
       });
       
@@ -250,6 +321,21 @@ export function useRaffle() {
       setIsProcessing(false);
     }
   }, [processAddresses]);
+  
+  // Helper function to detect text encoding
+  const detectEncoding = (text: string): string => {
+    // Check for BOM markers
+    if (text.charCodeAt(0) === 0xFEFF) return "UTF-8 with BOM";
+    if (text.charCodeAt(0) === 0xFFFE) return "UTF-16LE";
+    if (text.charCodeAt(0) === 0xFEFF && text.charCodeAt(1) === 0) return "UTF-16BE";
+    
+    // Check for common encoding patterns
+    const hasHighAscii = /[\x80-\xFF]/.test(text);
+    if (!hasHighAscii) return "ASCII or UTF-8";
+    
+    // Default to assuming UTF-8
+    return "Likely UTF-8";
+  };
   
   // Conduct the raffle draw
   const conductRaffle = useCallback((numWinners: number) => {

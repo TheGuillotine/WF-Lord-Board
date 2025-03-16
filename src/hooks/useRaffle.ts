@@ -100,7 +100,7 @@ export function useRaffle() {
       
       // Debug output
       console.log(`Lord ${lord.tokenId} (${rarity}): ${tickets} tickets × ${days} days = ${lordRafflePower} raffle power`);
-    });
+    }
     
     console.log(`Total raffle power for ${normalizedTargetAddress}: ${totalRafflePower}`);
     return totalRafflePower;

@@ -17,27 +17,29 @@ export function useRaffle() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [raffleComplete, setRaffleComplete] = useState(false);
   
-  // Process the stakers data to get raffle power
-  const processStakersData = useCallback(() => {
-    if (!allLords.length) return {};
+  // Calculate raffle power directly from allLords - this ensures consistency with the Stakers Data page
+  const getRafflePowerByAddress = useCallback((targetAddress: string) => {
+    if (!allLords.length) return 0;
     
-    const stakerMap: Record<string, {
-      rafflePower: number;
-    }> = {};
+    // Normalize the target address
+    const normalizedTargetAddress = targetAddress.toLowerCase().trim();
     
-    const calculateLordRafflePower = (lord: {
-      isStaked: boolean;
-      stakingDuration?: number;
-      attributes: {
-        rank: string[];
-      };
-    }): number => {
-      if (!lord.isStaked || !lord.stakingDuration) return 0;
+    // Filter only staked lords owned by this address
+    const addressLords = allLords.filter(lord => 
+      lord.isStaked && 
+      lord.owner.toLowerCase().trim() === normalizedTargetAddress
+    );
+    
+    // Calculate total raffle power for this address
+    let totalRafflePower = 0;
+    
+    for (const lord of addressLords) {
+      if (!lord.isStaked || !lord.stakingDuration) continue;
       
       const rarity = lord.attributes.rank[0]?.toLowerCase() || '';
       const days = lord.stakingDuration;
       
-      // Calculate tickets based on rarity
+      // Calculate tickets based on rarity - EXACTLY as in Stakers Data page
       let tickets = 0;
       switch (rarity) {
         case 'rare':
@@ -57,36 +59,10 @@ export function useRaffle() {
       }
       
       // Multiply tickets by days staked
-      return tickets * days;
-    };
+      totalRafflePower += tickets * days;
+    }
     
-    // Only consider staked lords
-    const stakedLords = allLords.filter(lord => lord.isStaked);
-    
-    stakedLords.forEach(lord => {
-      const ownerAddress = lord.owner.toLowerCase();
-      
-      if (!stakerMap[ownerAddress]) {
-        stakerMap[ownerAddress] = { rafflePower: 0 };
-      }
-      
-      stakerMap[ownerAddress].rafflePower += calculateLordRafflePower(lord);
-    });
-    
-    return stakerMap;
-  }, [allLords]);
-  
-  // For debugging - get stakers data
-  const getStakersAddresses = useCallback(() => {
-    if (!allLords.length) return [];
-    
-    // Only consider staked lords
-    const stakedLords = allLords.filter(lord => lord.isStaked);
-    
-    // Get unique owner addresses
-    const uniqueOwners = new Set(stakedLords.map(lord => lord.owner.toLowerCase()));
-    
-    return Array.from(uniqueOwners);
+    return totalRafflePower;
   }, [allLords]);
   
   // Parse uploaded file (CSV or TXT)
@@ -115,7 +91,7 @@ export function useRaffle() {
           parts.forEach(part => {
             const trimmed = part.trim().replace(/^["'](.*)["']$/, '$1'); // Remove quotes
             if (/^0x[a-fA-F0-9]{40}$/i.test(trimmed)) {
-              addresses.push(trimmed.toLowerCase());
+              addresses.push(trimmed);
             }
           });
         });
@@ -125,33 +101,24 @@ export function useRaffle() {
         const matches = text.match(regex);
         
         if (matches) {
-          addresses.push(...matches.map(addr => addr.toLowerCase()));
+          addresses.push(...matches);
         }
       }
       
-      if (addresses.length === 0) {
+      // Deduplicate addresses (in case there are duplicates in the file)
+      const uniqueAddresses = [...new Set(addresses)];
+      
+      if (uniqueAddresses.length === 0) {
         setFileError('No valid wallet addresses found in the file');
         setIsProcessing(false);
         return;
       }
       
-      // Get stakers data with raffle power
-      const stakersData = processStakersData();
-      
-      // Get all stakers addresses for debugging
-      const allStakersAddresses = getStakersAddresses();
-      
-      // For debugging, check if addresses from the file match any known stakers
-      const foundAddresses = addresses.filter(addr => allStakersAddresses.includes(addr));
-      console.log(`Found ${foundAddresses.length} matching addresses out of ${addresses.length} uploaded`);
-      
-      // Map addresses to raffle power
-      const participantsList: Participant[] = addresses.map(address => {
-        const normalizedAddress = address.toLowerCase();
-        const rafflePower = stakersData[normalizedAddress]?.rafflePower || 0;
-        
+      // Calculate raffle power for each address using the same exact method as in Stakers Data page
+      const participantsList: Participant[] = uniqueAddresses.map(address => {
+        const rafflePower = getRafflePowerByAddress(address);
         return {
-          address: normalizedAddress,
+          address,
           rafflePower,
           percentage: 0,
           isWinner: false
@@ -166,6 +133,9 @@ export function useRaffle() {
         percentage: totalRafflePower > 0 ? (p.rafflePower / totalRafflePower) * 100 : 0
       }));
       
+      // Sort by raffle power descending
+      participantsWithPercentage.sort((a, b) => b.rafflePower - a.rafflePower);
+      
       setParticipants(participantsWithPercentage);
       setIsProcessing(false);
       
@@ -174,7 +144,7 @@ export function useRaffle() {
       setFileError('Error parsing the file. Please ensure it is a valid file format.');
       setIsProcessing(false);
     }
-  }, [processStakersData, getStakersAddresses]);
+  }, [getRafflePowerByAddress]);
   
   // Conduct the raffle draw
   const conductRaffle = useCallback((numWinners: number) => {

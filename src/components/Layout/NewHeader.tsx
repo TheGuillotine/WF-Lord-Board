@@ -36,8 +36,8 @@ export function NewHeader() {
       <style jsx>{`
         .navbar {
           padding: 1.5rem 0 1rem 0;
-          background-color: white;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+          background-color: #2D3748;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
         .header-content {
@@ -63,7 +63,7 @@ export function NewHeader() {
         .logo-title {
           font-size: 1.5rem;
           font-weight: 600;
-          color: #4a5568;
+          color: white;
           margin: 0;
         }
         

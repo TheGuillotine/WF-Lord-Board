@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useStakersData } from '../../hooks/useStakersData';
 
 interface AddressInputProps {
   onSubmitAddresses: (addresses: string[]) => void;
@@ -19,6 +20,9 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
   const [uniqueAddressCount, setUniqueAddressCount] = useState(0);
   const [validatedLines, setValidatedLines] = useState<AddressValidation[]>([]);
   const [highlightedText, setHighlightedText] = useState('');
+  
+  // Import stakers data
+  const { stakers, loading: stakersLoading } = useStakersData();
   
   // Process and validate the input text
   useEffect(() => {
@@ -134,8 +138,48 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
     onSubmitAddresses(uniqueAddresses);
   };
   
+  // Import all stakers button handler
+  const handleImportAllStakers = () => {
+    if (stakersLoading || !stakers.length) return;
+    
+    // Extract all staker addresses
+    const stakerAddresses = stakers.map(staker => staker.address);
+    
+    // Set as text
+    setAddressText(stakerAddresses.join('\n'));
+  };
+  
+  // Clear all button handler
+  const handleClearAll = () => {
+    setAddressText('');
+    setValidatedLines([]);
+    setLineCount(0);
+    setValidAddressCount(0);
+    setUniqueAddressCount(0);
+  };
+  
   return (
     <div className="address-input-container">
+      <div className="utility-buttons">
+        <button
+          className="btn btn-secondary"
+          onClick={handleImportAllStakers}
+          disabled={isProcessing || stakersLoading}
+          title="Import all addresses from Stakers Data"
+        >
+          {stakersLoading ? 'Loading Stakers...' : `Import All Stakers (${stakers.length})`}
+        </button>
+        
+        <button
+          className="btn btn-danger"
+          onClick={handleClearAll}
+          disabled={isProcessing || !addressText}
+          title="Clear all addresses"
+        >
+          Clear All
+        </button>
+      </div>
+      
       <div className="text-area-container">
         <textarea
           className="address-textarea"
@@ -212,6 +256,12 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
           width: 100%;
           margin-bottom: 1.5rem;
           position: relative;
+        }
+        
+        .utility-buttons {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 0.75rem;
         }
         
         .text-area-container {
@@ -328,6 +378,7 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
           border-radius: 0.25rem;
           cursor: pointer;
           transition: background-color 0.2s;
+          white-space: nowrap;
         }
         
         .btn-primary {
@@ -335,12 +386,32 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
           background-color: #4a5568;
         }
         
+        .btn-secondary {
+          color: #2d3748;
+          background-color: #e2e8f0;
+        }
+        
+        .btn-danger {
+          color: white;
+          background-color: #e53e3e;
+        }
+        
         .btn-primary:hover {
           background-color: #2d3748;
         }
         
-        .btn-primary:disabled {
-          background-color: #718096;
+        .btn-secondary:hover {
+          background-color: #cbd5e0;
+        }
+        
+        .btn-danger:hover {
+          background-color: #c53030;
+        }
+        
+        .btn-primary:disabled,
+        .btn-secondary:disabled,
+        .btn-danger:disabled {
+          opacity: 0.6;
           cursor: not-allowed;
         }
         

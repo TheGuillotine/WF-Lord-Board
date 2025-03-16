@@ -5,6 +5,7 @@ import { AddressInput } from '../components/Raffle/AddressInput';
 import { ParticipantsList } from '../components/Raffle/ParticipantsList';
 import { RaffleControls } from '../components/Raffle/RaffleControls';
 import { useRaffle } from '../hooks/useRaffle';
+import { useStakersData } from '../hooks/useStakersData';
 
 export default function RafflePage() {
   const {
@@ -18,6 +19,9 @@ export default function RafflePage() {
     error,
     raffleComplete
   } = useRaffle();
+
+  // Fetch stakers data for the "Use All Stakers" button
+  const { stakers, loading: loadingStakers } = useStakersData();
 
   return (
     <>
@@ -51,6 +55,8 @@ export default function RafflePage() {
               onSubmitAddresses={processAddresses}
               isProcessing={isProcessing}
               error={fileError}
+              stakersData={stakers}
+              isLoadingStakers={loadingStakers}
             />
           </section>
           

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { StakerData } from '../../hooks/useStakersData';
 
 interface AddressInputProps {
   onSubmitAddresses: (addresses: string[]) => void;
   isProcessing: boolean;
   error: string | null;
+  stakersData?: StakerData[]; // Optional stakers data for "Use All Stakers" button
+  isLoadingStakers?: boolean; // Whether stakers data is still loading
 }
 
 interface AddressValidation {
@@ -12,7 +15,13 @@ interface AddressValidation {
   errorReason?: string;
 }
 
-export function AddressInput({ onSubmitAddresses, isProcessing, error }: AddressInputProps) {
+export function AddressInput({ 
+  onSubmitAddresses, 
+  isProcessing, 
+  error, 
+  stakersData = [], 
+  isLoadingStakers = false 
+}: AddressInputProps) {
   const [addressText, setAddressText] = useState('');
   const [lineCount, setLineCount] = useState(0);
   const [validAddressCount, setValidAddressCount] = useState(0);
@@ -133,6 +142,22 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
     // Submit the addresses
     onSubmitAddresses(uniqueAddresses);
   };
+
+  // New function: use all stakers addresses
+  const handleUseAllStakers = () => {
+    if (stakersData.length === 0) return;
+    
+    // Extract addresses from stakers data
+    const allStakerAddresses = stakersData.map(staker => staker.address);
+    
+    // Format addresses for display, one per line
+    setAddressText(allStakerAddresses.join('\n'));
+  };
+  
+  // New function: clear address input
+  const handleClearAddresses = () => {
+    setAddressText('');
+  };
   
   return (
     <div className="address-input-container">
@@ -181,6 +206,26 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
             </div>
           )}
         </div>
+      </div>
+      
+      {/* Action buttons for all stakers and clear */}
+      <div className="action-buttons">
+        <button
+          className="btn btn-secondary"
+          onClick={handleUseAllStakers}
+          disabled={isProcessing || isLoadingStakers || stakersData.length === 0}
+          title={stakersData.length === 0 ? "No stakers data available" : `Add all ${stakersData.length} stakers`}
+        >
+          {isLoadingStakers ? "Loading Stakers..." : `Use All Stakers (${stakersData.length})`}
+        </button>
+        
+        <button
+          className="btn btn-secondary"
+          onClick={handleClearAddresses}
+          disabled={isProcessing || !addressText.trim()}
+        >
+          Clear All
+        </button>
       </div>
       
       {validAddressCount < lineCount && (
@@ -342,6 +387,28 @@ export function AddressInput({ onSubmitAddresses, isProcessing, error }: Address
         .btn-primary:disabled {
           background-color: #718096;
           cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+          color: #4a5568;
+          background-color: #edf2f7;
+          border: 1px solid #e2e8f0;
+        }
+        
+        .btn-secondary:hover {
+          background-color: #e2e8f0;
+        }
+        
+        .btn-secondary:disabled {
+          color: #a0aec0;
+          background-color: #f7fafc;
+          cursor: not-allowed;
+        }
+        
+        .action-buttons {
+          margin-top: 0.5rem;
+          display: flex;
+          gap: 0.5rem;
         }
         
         .mt-2 {

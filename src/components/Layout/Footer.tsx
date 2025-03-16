@@ -14,7 +14,7 @@ export function Footer() {
           </a>
         </p>
         <p className="mt-2">
-          © {new Date().getFullYear()} | Made with ❤️ by Player 222
+          © {new Date().getFullYear()} | Made with ❤️ by Player 222, TheGuillotine and Claude
         </p>
       </div>
     </footer>

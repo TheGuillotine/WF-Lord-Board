@@ -89,9 +89,10 @@ export function useRaffle() {
           
           // Look for ethereum addresses (0x followed by 40 hex chars)
           parts.forEach(part => {
-            const trimmed = part.trim().replace(/^["'](.*)["']$/, '$1'); // Remove quotes
+            const trimmed = part.trim().replace(/^[\"'](.*)[\"']$/, '$1'); // Remove quotes
             if (/^0x[a-fA-F0-9]{40}$/i.test(trimmed)) {
-              addresses.push(trimmed);
+              // Normalize address by converting to lowercase and trimming whitespace
+              addresses.push(trimmed.toLowerCase().trim());
             }
           });
         });
@@ -101,7 +102,9 @@ export function useRaffle() {
         const matches = text.match(regex);
         
         if (matches) {
-          addresses.push(...matches);
+          // Normalize each address by converting to lowercase and trimming whitespace
+          const normalizedAddresses = matches.map(addr => addr.toLowerCase().trim());
+          addresses.push(...normalizedAddresses);
         }
       }
       

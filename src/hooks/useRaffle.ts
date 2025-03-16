@@ -17,18 +17,54 @@ export function useRaffle() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [raffleComplete, setRaffleComplete] = useState(false);
   
+  // Get a list of all addresses in the system for validation purposes
+  const getAllAddressesInSystem = useCallback(() => {
+    const addresses = new Set<string>();
+    
+    allLords.forEach(lord => {
+      if (lord.isStaked && lord.owner) {
+        // Store address in normalized form (lowercase, trimmed)
+        addresses.add(lord.owner.toLowerCase().trim());
+      }
+    });
+    
+    return addresses;
+  }, [allLords]);
+  
   // Calculate raffle power directly from allLords - this ensures consistency with the Stakers Data page
   const getRafflePowerByAddress = useCallback((targetAddress: string) => {
     if (!allLords.length) return 0;
     
+    // Extra aggressive normalization to handle potential encoding issues
+    const normalizeAddress = (addr: string): string => {
+      return addr.toLowerCase().trim()
+        .replace(/\s+/g, '') // Remove all whitespace
+        .replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width spaces and BOM
+    };
+    
     // Normalize the target address
-    const normalizedTargetAddress = targetAddress.toLowerCase().trim();
+    const normalizedTargetAddress = normalizeAddress(targetAddress);
+    
+    // Debug output
+    console.log(`Looking for raffle power for address: ${targetAddress} (normalized: ${normalizedTargetAddress})`);
     
     // Filter only staked lords owned by this address
-    const addressLords = allLords.filter(lord => 
-      lord.isStaked && 
-      lord.owner.toLowerCase().trim() === normalizedTargetAddress
-    );
+    const addressLords = allLords.filter(lord => {
+      if (!lord.isStaked || !lord.owner) return false;
+      
+      const normalizedOwner = normalizeAddress(lord.owner);
+      const isMatch = normalizedOwner === normalizedTargetAddress;
+      
+      // Debug output for troubleshooting
+      if (isMatch) {
+        console.log(`Found match: ${lord.tokenId} owned by ${lord.owner} (normalized: ${normalizedOwner})`);
+      }
+      
+      return isMatch;
+    });
+    
+    // Debug output
+    console.log(`Found ${addressLords.length} staked lords for address ${normalizedTargetAddress}`);
     
     // Calculate total raffle power for this address
     let totalRafflePower = 0;
@@ -59,24 +95,36 @@ export function useRaffle() {
       }
       
       // Multiply tickets by days staked
-      totalRafflePower += tickets * days;
-    }
+      const lordRafflePower = tickets * days;
+      totalRafflePower += lordRafflePower;
+      
+      // Debug output
+      console.log(`Lord ${lord.tokenId} (${rarity}): ${tickets} tickets × ${days} days = ${lordRafflePower} raffle power`);
+    });
     
+    console.log(`Total raffle power for ${normalizedTargetAddress}: ${totalRafflePower}`);
     return totalRafflePower;
   }, [allLords]);
   
-  // Enhanced function to extract Ethereum addresses from text
+  // Enhanced function to extract and normalize Ethereum addresses
   const extractAddresses = (text: string): string[] => {
     const addresses: string[] = [];
-    // Regex to match Ethereum addresses (case insensitive)
-    const ethAddressRegex = /0x[a-fA-F0-9]{40}/gi;
     
-    // Find all matches in the text
+    // Extremely thorough normalization function
+    const normalizeAddress = (addr: string): string => {
+      return addr.toLowerCase().trim()
+        .replace(/\s+/g, '') // Remove all whitespace
+        .replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width spaces and BOM
+    };
+    
+    // First attempt with standard regex
+    const ethAddressRegex = /0x[a-fA-F0-9]{40}/gi;
     const matches = text.match(ethAddressRegex);
+    
     if (matches) {
-      // Normalize addresses (lowercase and trim)
+      // Normalize addresses
       matches.forEach(address => {
-        addresses.push(address.toLowerCase().trim());
+        addresses.push(normalizeAddress(address));
       });
     }
     
@@ -93,70 +141,93 @@ export function useRaffle() {
     try {
       // Read file
       const text = await file.text();
+      console.log(`File type: ${file.type}, File name: ${file.name}`);
+      
+      // Get all system addresses for validation
+      const systemAddresses = getAllAddressesInSystem();
+      console.log(`Total addresses in system: ${systemAddresses.size}`);
+      
+      // For debug: Log a sample of addresses in the system
+      const sampleAddresses = Array.from(systemAddresses).slice(0, 5);
+      console.log('Sample system addresses:', sampleAddresses);
       
       // Parse the content
-      let addresses: string[] = [];
+      let extractedAddresses: string[] = [];
       
-      // We'll handle both CSV and plain text formats
-      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
-        // Check if it's a CSV file from Excel which might have special formatting
-        const isExcelCsv = text.includes('\r') || text.includes('"');
+      // Log a sample of the file content for debugging
+      console.log('File content sample:', text.substring(0, 200));
+      
+      // Detect file type
+      const isCSV = file.type === 'text/csv' || file.name.endsWith('.csv');
+      
+      if (isCSV) {
+        console.log('Processing as CSV file');
         
         // Remove any BOM characters that might be present in the file
         const cleanText = text.replace(/^\uFEFF/, '');
         
         // Split by lines
         const lines = cleanText.split(/\r?\n/);
+        console.log(`CSV has ${lines.length} lines`);
         
-        for (const line of lines) {
-          if (!line.trim()) continue; // Skip empty lines
+        // Process each line
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue; // Skip empty lines
           
-          let lineParts: string[] = [];
-          
-          // Handle quoted fields (especially important for Excel CSV files)
-          if (isExcelCsv && line.includes('"')) {
-            // More complex parsing for Excel-style CSV with quoted fields
-            const regex = /"([^"]*)"|\s*(,)\s*|([^,]+)/g;
-            let match;
-            
-            while ((match = regex.exec(line)) !== null) {
-              if (match[1] !== undefined) {
-                // This is a quoted field
-                lineParts.push(match[1]);
-              } else if (match[3] !== undefined) {
-                // This is an unquoted field
-                lineParts.push(match[3]);
-              }
-              // Ignore the comma separators
-            }
-          } else {
-            // Simple splitting for standard CSV
-            lineParts = line.split(/[,;\t]/);
+          // Log first few lines for debugging
+          if (i < 5) {
+            console.log(`Line ${i+1}: "${line}"`);
           }
           
-          // Process each part to find Ethereum addresses
-          for (const part of lineParts) {
-            if (!part.trim()) continue;
-            
-            // Remove quotes and trim whitespace
-            const cleanPart = part.trim().replace(/^["'](.*)["']$/, '$1');
-            
-            // Look for Ethereum addresses in this part
-            const partAddresses = extractAddresses(cleanPart);
-            if (partAddresses.length > 0) {
-              addresses = [...addresses, ...partAddresses];
+          // Direct address extraction from the line using regex
+          const lineAddresses = extractAddresses(line);
+          if (lineAddresses.length > 0) {
+            extractedAddresses = [...extractedAddresses, ...lineAddresses];
+            if (i < 5) {
+              console.log(`Found addresses in line ${i+1}:`, lineAddresses);
+            }
+          } else {
+            // If no direct matches, try splitting the line
+            const parts = line.split(/[,;\t]/);
+            for (const part of parts) {
+              const cleanPart = part.trim()
+                .replace(/^["'](.*)["']$/, '$1') // Remove quotes
+                .replace(/\s+/g, ''); // Remove all whitespace
+              
+              // Skip empty parts
+              if (!cleanPart) continue;
+              
+              // Check if this part looks like an Ethereum address
+              if (/^0x[a-fA-F0-9]{40}$/i.test(cleanPart)) {
+                const normalizedAddress = cleanPart.toLowerCase();
+                extractedAddresses.push(normalizedAddress);
+                if (i < 5) {
+                  console.log(`Found address in part of line ${i+1}: ${normalizedAddress}`);
+                }
+              }
             }
           }
         }
       } else {
-        // For non-CSV, simply extract all Ethereum addresses from the text
-        addresses = extractAddresses(text);
+        console.log('Processing as plain text file');
+        // For non-CSV, extract all Ethereum addresses using regex
+        extractedAddresses = extractAddresses(text);
       }
       
-      // Deduplicate addresses (in case there are duplicates in the file)
-      const uniqueAddresses = [...new Set(addresses)];
-      
+      // Deduplicate addresses
+      const uniqueAddresses = [...new Set(extractedAddresses)];
       console.log(`Found ${uniqueAddresses.length} unique addresses in the file`);
+      
+      // For debug: Log the first few extracted addresses
+      console.log('First few extracted addresses:', uniqueAddresses.slice(0, 5));
+      
+      // IMPORTANT VERIFICATION STEP: Check if addresses are found in system
+      for (let i = 0; i < Math.min(10, uniqueAddresses.length); i++) {
+        const address = uniqueAddresses[i];
+        const found = systemAddresses.has(address);
+        console.log(`Address ${i+1}: ${address} - Found in system: ${found}`);
+      }
       
       if (uniqueAddresses.length === 0) {
         setFileError('No valid wallet addresses found in the file');
@@ -165,7 +236,9 @@ export function useRaffle() {
       }
       
       // Calculate raffle power for each address using the same exact method as in Stakers Data page
+      console.log('Calculating raffle power for each address...');
       const participantsList: Participant[] = uniqueAddresses.map(address => {
+        console.log(`Processing address: ${address}`);
         const rafflePower = getRafflePowerByAddress(address);
         return {
           address,
@@ -175,8 +248,14 @@ export function useRaffle() {
         };
       });
       
+      // Log results for verification
+      participantsList.slice(0, 5).forEach((p, i) => {
+        console.log(`Participant ${i+1}: ${p.address} - Raffle Power: ${p.rafflePower}`);
+      });
+      
       // Calculate percentage for each participant
       const totalRafflePower = participantsList.reduce((sum, p) => sum + p.rafflePower, 0);
+      console.log(`Total raffle power for all participants: ${totalRafflePower}`);
       
       const participantsWithPercentage = participantsList.map(p => ({
         ...p,
@@ -194,7 +273,7 @@ export function useRaffle() {
       setFileError('Error parsing the file. Please ensure it is a valid file format.');
       setIsProcessing(false);
     }
-  }, [getRafflePowerByAddress]);
+  }, [getRafflePowerByAddress, getAllAddressesInSystem]);
   
   // Conduct the raffle draw
   const conductRaffle = useCallback((numWinners: number) => {

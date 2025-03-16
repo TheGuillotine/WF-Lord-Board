@@ -16,7 +16,9 @@ export default function RafflePage() {
     isDrawing,
     fileError,
     error,
-    raffleComplete
+    raffleComplete,
+    importAllStakerAddresses,
+    clearParticipants
   } = useRaffle();
 
   return (
@@ -52,6 +54,24 @@ export default function RafflePage() {
               isProcessing={isProcessing}
               error={fileError}
             />
+
+            {/* New buttons for importing and clearing */}
+            <div className="flex justify-between mt-4">
+              <button 
+                onClick={importAllStakerAddresses}
+                disabled={isProcessing}
+                className="btn btn-primary mr-2"
+              >
+                Import All Staker Addresses
+              </button>
+              <button 
+                onClick={clearParticipants}
+                disabled={isProcessing}
+                className="btn btn-secondary"
+              >
+                Clear Participants
+              </button>
+            </div>
           </section>
           
           {participants.length > 0 && (
@@ -118,6 +138,36 @@ export default function RafflePage() {
             padding: 0.75rem;
             margin-bottom: 1rem;
             border-left: 4px solid #e53e3e;
+          }
+
+          .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+          }
+
+          .btn-primary {
+            background-color: #3182ce;
+            color: white;
+          }
+
+          .btn-primary:hover {
+            background-color: #2c5282;
+          }
+
+          .btn-secondary {
+            background-color: #edf2f7;
+            color: #2d3748;
+          }
+
+          .btn-secondary:hover {
+            background-color: #e2e8f0;
+          }
+
+          .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
           }
         `}</style>
       </EnhancedLayout>

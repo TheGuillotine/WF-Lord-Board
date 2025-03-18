@@ -146,30 +146,28 @@ export function RaffleControls({
           {winners.filter(w => w.prizeType === 'Guarantee WL').length > 0 && (
             <div className="prize-category">
               <h4>Guarantee WL Winners</h4>
-              <div className="winners-list guarantee-winners">
+              <div className="winners-grid guarantee-winners">
                 {winners
                   .filter(winner => winner.prizeType === 'Guarantee WL')
                   .map((winner, index) => (
                     <div key={winner.address} className="winner-card">
                       <div className="winner-number">#{index + 1}</div>
-                      <div className="winner-info">
-                        <div className="winner-address">
-                          <a
-                            href={`https://marketplace.roninchain.com/account/${winner.address}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="contract-link"
-                          >
-                            {formatAddress(winner.address)}
-                          </a>
+                      <div className="winner-address">
+                        <a
+                          href={`https://marketplace.roninchain.com/account/${winner.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="contract-link"
+                        >
+                          {formatAddress(winner.address)}
+                        </a>
+                      </div>
+                      <div className="winner-stats">
+                        <div className="winner-power">
+                          Power: {winner.rafflePower.toLocaleString()}
                         </div>
-                        <div className="winner-stats">
-                          <span className="winner-power">
-                            Raffle Power: {winner.rafflePower.toLocaleString()}
-                          </span>
-                          <span className="winner-chance">
-                            Win Chance: {winner.percentage.toFixed(2)}%
-                          </span>
+                        <div className="winner-chance">
+                          Chance: {winner.percentage.toFixed(2)}%
                         </div>
                       </div>
                     </div>
@@ -182,30 +180,28 @@ export function RaffleControls({
           {winners.filter(w => w.prizeType === 'FCFS WL').length > 0 && (
             <div className="prize-category">
               <h4>FCFS WL Winners</h4>
-              <div className="winners-list fcfs-winners">
+              <div className="winners-grid fcfs-winners">
                 {winners
                   .filter(winner => winner.prizeType === 'FCFS WL')
                   .map((winner, index) => (
                     <div key={winner.address} className="winner-card">
                       <div className="winner-number">#{index + 1}</div>
-                      <div className="winner-info">
-                        <div className="winner-address">
-                          <a
-                            href={`https://marketplace.roninchain.com/account/${winner.address}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="contract-link"
-                          >
-                            {formatAddress(winner.address)}
-                          </a>
+                      <div className="winner-address">
+                        <a
+                          href={`https://marketplace.roninchain.com/account/${winner.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="contract-link"
+                        >
+                          {formatAddress(winner.address)}
+                        </a>
+                      </div>
+                      <div className="winner-stats">
+                        <div className="winner-power">
+                          Power: {winner.rafflePower.toLocaleString()}
                         </div>
-                        <div className="winner-stats">
-                          <span className="winner-power">
-                            Raffle Power: {winner.rafflePower.toLocaleString()}
-                          </span>
-                          <span className="winner-chance">
-                            Win Chance: {winner.percentage.toFixed(2)}%
-                          </span>
+                        <div className="winner-chance">
+                          Chance: {winner.percentage.toFixed(2)}%
                         </div>
                       </div>
                     </div>
@@ -330,46 +326,41 @@ export function RaffleControls({
           border-bottom: 1px solid #e2e8f0;
         }
         
-        .winners-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
+        .winners-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 1rem;
         }
         
         .winner-card {
-          display: flex;
-          padding: 0.75rem;
-          border-radius: 0.25rem;
+          border-radius: 0.375rem;
+          padding: 1rem;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          display: flex;
+          flex-direction: column;
         }
         
         .guarantee-winners .winner-card {
           background-color: rgba(72, 187, 120, 0.1);
-          border-left: 4px solid #48bb78;
+          border-top: 4px solid #48bb78;
         }
         
         .fcfs-winners .winner-card {
           background-color: rgba(237, 137, 54, 0.1);
-          border-left: 4px solid #ed8936;
+          border-top: 4px solid #ed8936;
         }
         
         .winner-number {
           font-weight: 700;
           font-size: 1.2rem;
-          margin-right: 1rem;
-          width: 2rem;
-          text-align: center;
-          align-self: center;
           color: #2d3748;
-        }
-        
-        .winner-info {
-          flex: 1;
+          margin-bottom: 0.5rem;
         }
         
         .winner-address {
           font-family: monospace;
-          margin-bottom: 0.25rem;
+          margin-bottom: 0.75rem;
+          word-break: break-all;
         }
         
         .contract-link {
@@ -382,10 +373,13 @@ export function RaffleControls({
         }
         
         .winner-stats {
-          display: flex;
-          gap: 1rem;
           font-size: 0.8rem;
           color: #718096;
+          margin-top: auto;
+        }
+        
+        .winner-power, .winner-chance {
+          margin-bottom: 0.25rem;
         }
         
         .export-winners-container {

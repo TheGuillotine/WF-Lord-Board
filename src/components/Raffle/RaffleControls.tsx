@@ -153,24 +153,22 @@ export function RaffleControls({
                   .filter(winner => winner.prizeType === 'Guarantee WL')
                   .map((winner, index) => (
                     <div key={winner.address} className="winner-card guarantee-card">
-                      <div className="card-content">
-                        <div className="winner-rank">{index + 1}</div>
-                        <div className="winner-info">
-                          <a
-                            href={`https://marketplace.roninchain.com/account/${winner.address}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="wallet-address"
-                          >
-                            {formatAddress(winner.address)}
-                          </a>
-                          <div className="winner-stats">
-                            <div className="stat">
-                              <span>Power:</span> {winner.rafflePower.toLocaleString()}
-                            </div>
-                            <div className="stat">
-                              <span>Chance:</span> {winner.percentage.toFixed(2)}%
-                            </div>
+                      <div className="winner-rank">{index + 1}</div>
+                      <div className="winner-content">
+                        <a
+                          href={`https://marketplace.roninchain.com/account/${winner.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="wallet-address"
+                        >
+                          {formatAddress(winner.address)}
+                        </a>
+                        <div className="winner-stats">
+                          <div className="power-stat">
+                            <span>{winner.rafflePower.toLocaleString()}</span> Power
+                          </div>
+                          <div className="chance-stat">
+                            <span>{winner.percentage.toFixed(1)}%</span> Chance
                           </div>
                         </div>
                       </div>
@@ -191,24 +189,22 @@ export function RaffleControls({
                   .filter(winner => winner.prizeType === 'FCFS WL')
                   .map((winner, index) => (
                     <div key={winner.address} className="winner-card fcfs-card">
-                      <div className="card-content">
-                        <div className="winner-rank">{index + 1}</div>
-                        <div className="winner-info">
-                          <a
-                            href={`https://marketplace.roninchain.com/account/${winner.address}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="wallet-address"
-                          >
-                            {formatAddress(winner.address)}
-                          </a>
-                          <div className="winner-stats">
-                            <div className="stat">
-                              <span>Power:</span> {winner.rafflePower.toLocaleString()}
-                            </div>
-                            <div className="stat">
-                              <span>Chance:</span> {winner.percentage.toFixed(2)}%
-                            </div>
+                      <div className="winner-rank">{index + 1}</div>
+                      <div className="winner-content">
+                        <a
+                          href={`https://marketplace.roninchain.com/account/${winner.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="wallet-address"
+                        >
+                          {formatAddress(winner.address)}
+                        </a>
+                        <div className="winner-stats">
+                          <div className="power-stat">
+                            <span>{winner.rafflePower.toLocaleString()}</span> Power
+                          </div>
+                          <div className="chance-stat">
+                            <span>{winner.percentage.toFixed(1)}%</span> Chance
                           </div>
                         </div>
                       </div>
@@ -321,9 +317,9 @@ export function RaffleControls({
         
         .prize-category {
           margin-bottom: 1.5rem;
-          border: 1px solid #e2e8f0;
           border-radius: 0.5rem;
           overflow: hidden;
+          background-color: white;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
@@ -334,10 +330,12 @@ export function RaffleControls({
         
         .guarantee-header {
           background-color: rgba(72, 187, 120, 0.1);
+          border-bottom: 1px solid rgba(72, 187, 120, 0.2);
         }
         
         .fcfs-header {
           background-color: rgba(237, 137, 54, 0.1);
+          border-bottom: 1px solid rgba(237, 137, 54, 0.2);
         }
         
         .prize-header h4 {
@@ -350,25 +348,18 @@ export function RaffleControls({
         .winners-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: 0.5rem;
+          gap: 0.75rem;
           padding: 0.75rem;
-          background-color: #f8fafc;
         }
         
         .winner-card {
-          background-color: white;
-          border-radius: 0.25rem;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          display: flex;
+          align-items: stretch;
+          border-radius: 0.375rem;
           overflow: hidden;
-        }
-        
-        .guarantee-card {
-          border-left: 3px solid #48bb78;
-        }
-        
-        .fcfs-card {
-          border-left: 3px solid #ed8936;
+          background-color: white;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         
         .winner-card:hover {
@@ -376,82 +367,95 @@ export function RaffleControls({
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
         
-        .card-content {
-          display: flex;
-          padding: 0.75rem;
+        .guarantee-card {
+          border: 1px solid rgba(72, 187, 120, 0.2);
+        }
+        
+        .fcfs-card {
+          border: 1px solid rgba(237, 137, 54, 0.2);
         }
         
         .winner-rank {
-          width: 1.5rem;
-          height: 1.5rem;
-          background-color: #f7fafc;
+          width: 2rem;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 700;
-          font-size: 0.875rem;
-          color: #4a5568;
-          margin-right: 0.75rem;
-          border: 1px solid #e2e8f0;
+          font-size: 0.9rem;
+          color: white;
         }
         
         .guarantee-card .winner-rank {
-          color: #2f855a;
-          border-color: #c6f6d5;
-          background-color: #f0fff4;
+          background-color: #48bb78;
         }
         
         .fcfs-card .winner-rank {
-          color: #c05621;
-          border-color: #feebc8;
-          background-color: #fffaf0;
+          background-color: #ed8936;
         }
         
-        .winner-info {
+        .winner-content {
           flex: 1;
-          min-width: 0; /* Allow text truncation to work in flex child */
+          padding: 0.75rem;
+          display: flex;
+          flex-direction: column;
         }
         
         .wallet-address {
-          display: block;
           font-family: monospace;
-          font-size: 0.85rem;
-          color: #4a5568;
+          font-size: 0.9rem;
+          font-weight: 600;
           text-decoration: none;
+          padding: 0.25rem 0.5rem;
+          border-radius: 0.25rem;
           margin-bottom: 0.5rem;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          text-align: center;
+          transition: background-color 0.15s ease;
+        }
+        
+        .guarantee-card .wallet-address {
+          color: #2f855a;
+          background-color: rgba(72, 187, 120, 0.1);
         }
         
         .guarantee-card .wallet-address:hover {
-          color: #2f855a;
+          background-color: rgba(72, 187, 120, 0.2);
+        }
+        
+        .fcfs-card .wallet-address {
+          color: #c05621;
+          background-color: rgba(237, 137, 54, 0.1);
         }
         
         .fcfs-card .wallet-address:hover {
-          color: #c05621;
+          background-color: rgba(237, 137, 54, 0.2);
         }
         
         .winner-stats {
-          font-size: 0.75rem;
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.7rem;
           color: #718096;
         }
         
-        .stat {
+        .power-stat, .chance-stat {
           display: flex;
-          justify-content: space-between;
+          flex-direction: column;
+          align-items: center;
         }
         
-        .stat span {
-          color: #a0aec0;
+        .power-stat span, .chance-stat span {
+          font-weight: 700;
+          font-size: 0.85rem;
         }
         
-        .guarantee-card .stat {
-          color: #38a169;
+        .guarantee-card .power-stat span, 
+        .guarantee-card .chance-stat span {
+          color: #2f855a;
         }
         
-        .fcfs-card .stat {
-          color: #dd6b20;
+        .fcfs-card .power-stat span, 
+        .fcfs-card .chance-stat span {
+          color: #c05621;
         }
         
         .export-winners-container {

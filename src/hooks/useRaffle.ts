@@ -2,11 +2,14 @@ import { useState, useCallback } from 'react';
 import { useNFTData } from './useNFTData';
 import { Lord } from '../types';
 
+export type PrizeType = 'Guarantee WL' | 'FCFS WL';
+
 export interface Participant {
   address: string;
   rafflePower: number;
   percentage: number;
   isWinner: boolean;
+  prizeType?: PrizeType; // New field for prize category
 }
 
 export function useRaffle() {
@@ -128,8 +131,8 @@ export function useRaffle() {
     }
   }, [getRafflePowerByAddress]);
   
-  // Conduct the raffle draw
-  const conductRaffle = useCallback((numWinners: number) => {
+  // Conduct the raffle draw - Updated to handle two categories
+  const conductRaffle = useCallback((guaranteeWinners: number, fcfsWinners: number) => {
     setIsDrawing(true);
     setRaffleComplete(false);
     setWinners([]);
@@ -137,8 +140,16 @@ export function useRaffle() {
     // Filter out participants with 0 raffle power
     const eligibleParticipants = participants.filter(p => p.rafflePower > 0);
     
-    // Make sure we don't try to select more winners than eligible participants
-    const maxWinners = Math.min(numWinners, eligibleParticipants.length);
+    // Calculate max winners for each category
+    const maxGuaranteeWinners = Math.min(guaranteeWinners, eligibleParticipants.length);
+    const maxFcfsWinners = Math.min(fcfsWinners, eligibleParticipants.length - maxGuaranteeWinners);
+    
+    const totalWinners = maxGuaranteeWinners + maxFcfsWinners;
+    
+    if (totalWinners === 0) {
+      setIsDrawing(false);
+      return;
+    }
     
     // Create a weighted array for random selection
     const weightedParticipants: Participant[] = [];
@@ -164,15 +175,31 @@ export function useRaffle() {
     const selectedWinners: Participant[] = [];
     const selectedAddresses = new Set<string>();
     
-    // Try to select maxWinners unique participants
+    // Try to select unique winners
     let attempts = 0;
     const maxAttempts = 1000; // Prevent infinite loop
     
-    while (selectedWinners.length < maxWinners && attempts < maxAttempts) {
+    // First select guarantee winners
+    while (selectedWinners.filter(w => w.prizeType === 'Guarantee WL').length < maxGuaranteeWinners && attempts < maxAttempts) {
       const randomIndex = Math.floor(Math.random() * weightedParticipants.length);
-      const selected = weightedParticipants[randomIndex];
+      const selected = {...weightedParticipants[randomIndex]};
       
       if (!selectedAddresses.has(selected.address)) {
+        selected.prizeType = 'Guarantee WL';
+        selectedAddresses.add(selected.address);
+        selectedWinners.push(selected);
+      }
+      
+      attempts++;
+    }
+    
+    // Then select FCFS winners
+    while (selectedWinners.filter(w => w.prizeType === 'FCFS WL').length < maxFcfsWinners && attempts < maxAttempts) {
+      const randomIndex = Math.floor(Math.random() * weightedParticipants.length);
+      const selected = {...weightedParticipants[randomIndex]};
+      
+      if (!selectedAddresses.has(selected.address)) {
+        selected.prizeType = 'FCFS WL';
         selectedAddresses.add(selected.address);
         selectedWinners.push(selected);
       }
@@ -181,10 +208,14 @@ export function useRaffle() {
     }
     
     // Mark winners in participants list
-    const updatedParticipants = participants.map(p => ({
-      ...p,
-      isWinner: selectedAddresses.has(p.address)
-    }));
+    const updatedParticipants = participants.map(p => {
+      const winner = selectedWinners.find(w => w.address === p.address);
+      return {
+        ...p,
+        isWinner: !!winner,
+        prizeType: winner?.prizeType
+      };
+    });
     
     setParticipants(updatedParticipants);
     setWinners(selectedWinners);

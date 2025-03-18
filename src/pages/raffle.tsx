@@ -75,7 +75,7 @@ export default function RafflePage() {
               <section className="draw-section">
                 <h2 className="section-title">3. Draw Winners</h2>
                 <p className="section-desc">
-                  Select the number of winners to draw and click the button.
+                  Select the number of winners to draw for each category and click the button.
                   Winners will be selected randomly, with chances proportional to raffle power.
                 </p>
                 

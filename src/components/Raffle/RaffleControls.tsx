@@ -145,34 +145,33 @@ export function RaffleControls({
           {/* Guarantee WL Winners */}
           {winners.filter(w => w.prizeType === 'Guarantee WL').length > 0 && (
             <div className="prize-category">
-              <div className="prize-header">
-                <div className="prize-icon guarantee-icon">🔐</div>
+              <div className="prize-header guarantee-header">
                 <h4>Guarantee WL Winners</h4>
               </div>
-              <div className="winners-grid guarantee-winners">
+              <div className="winners-grid">
                 {winners
                   .filter(winner => winner.prizeType === 'Guarantee WL')
                   .map((winner, index) => (
-                    <div key={winner.address} className="winner-card">
-                      <div className="card-top">
-                        <div className="winner-badge">{index + 1}</div>
-                        <a
-                          href={`https://marketplace.roninchain.com/account/${winner.address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="contract-link"
-                        >
-                          {formatAddress(winner.address)}
-                        </a>
-                      </div>
-                      <div className="card-stats">
-                        <div className="stat-item">
-                          <span className="stat-label">Raffle Power:</span>
-                          <span className="stat-value">{winner.rafflePower.toLocaleString()}</span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">Win Chance:</span>
-                          <span className="stat-value">{winner.percentage.toFixed(2)}%</span>
+                    <div key={winner.address} className="winner-card guarantee-card">
+                      <div className="card-content">
+                        <div className="winner-rank">{index + 1}</div>
+                        <div className="winner-info">
+                          <a
+                            href={`https://marketplace.roninchain.com/account/${winner.address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="wallet-address"
+                          >
+                            {formatAddress(winner.address)}
+                          </a>
+                          <div className="winner-stats">
+                            <div className="stat">
+                              <span>Power:</span> {winner.rafflePower.toLocaleString()}
+                            </div>
+                            <div className="stat">
+                              <span>Chance:</span> {winner.percentage.toFixed(2)}%
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -184,34 +183,33 @@ export function RaffleControls({
           {/* FCFS WL Winners */}
           {winners.filter(w => w.prizeType === 'FCFS WL').length > 0 && (
             <div className="prize-category">
-              <div className="prize-header">
-                <div className="prize-icon fcfs-icon">🏃</div>
+              <div className="prize-header fcfs-header">
                 <h4>FCFS WL Winners</h4>
               </div>
-              <div className="winners-grid fcfs-winners">
+              <div className="winners-grid">
                 {winners
                   .filter(winner => winner.prizeType === 'FCFS WL')
                   .map((winner, index) => (
-                    <div key={winner.address} className="winner-card">
-                      <div className="card-top">
-                        <div className="winner-badge">{index + 1}</div>
-                        <a
-                          href={`https://marketplace.roninchain.com/account/${winner.address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="contract-link"
-                        >
-                          {formatAddress(winner.address)}
-                        </a>
-                      </div>
-                      <div className="card-stats">
-                        <div className="stat-item">
-                          <span className="stat-label">Raffle Power:</span>
-                          <span className="stat-value">{winner.rafflePower.toLocaleString()}</span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">Win Chance:</span>
-                          <span className="stat-value">{winner.percentage.toFixed(2)}%</span>
+                    <div key={winner.address} className="winner-card fcfs-card">
+                      <div className="card-content">
+                        <div className="winner-rank">{index + 1}</div>
+                        <div className="winner-info">
+                          <a
+                            href={`https://marketplace.roninchain.com/account/${winner.address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="wallet-address"
+                          >
+                            {formatAddress(winner.address)}
+                          </a>
+                          <div className="winner-stats">
+                            <div className="stat">
+                              <span>Power:</span> {winner.rafflePower.toLocaleString()}
+                            </div>
+                            <div className="stat">
+                              <span>Chance:</span> {winner.percentage.toFixed(2)}%
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -314,214 +312,183 @@ export function RaffleControls({
         }
         
         .winners-title {
-          font-size: 1.8rem;
+          font-size: 1.5rem;
           font-weight: 700;
           margin-bottom: 1.5rem;
           text-align: center;
           color: #2d3748;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
         .prize-category {
-          margin-bottom: 2rem;
-          border-radius: 0.75rem;
-          padding: 1.5rem;
-          background-color: #ffffff;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          margin-bottom: 1.5rem;
+          border: 1px solid #e2e8f0;
+          border-radius: 0.5rem;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
         .prize-header {
-          display: flex;
-          align-items: center;
-          margin-bottom: 1.5rem;
-          border-bottom: 2px solid #f7fafc;
-          padding-bottom: 1rem;
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid #e2e8f0;
         }
         
-        .prize-icon {
-          font-size: 1.5rem;
-          margin-right: 0.75rem;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
+        .guarantee-header {
+          background-color: rgba(72, 187, 120, 0.1);
         }
         
-        .guarantee-icon {
-          background-color: rgba(72, 187, 120, 0.15);
-          color: #2f855a;
+        .fcfs-header {
+          background-color: rgba(237, 137, 54, 0.1);
         }
         
-        .fcfs-icon {
-          background-color: rgba(237, 137, 54, 0.15);
-          color: #c05621;
-        }
-        
-        .prize-category h4 {
-          font-size: 1.25rem;
+        .prize-header h4 {
+          font-size: 1rem;
           font-weight: 600;
-          color: #2d3748;
           margin: 0;
+          color: #2d3748;
         }
         
         .winners-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-          gap: 1rem;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 0.5rem;
+          padding: 0.75rem;
+          background-color: #f8fafc;
         }
         
         .winner-card {
-          border-radius: 0.75rem;
+          background-color: white;
+          border-radius: 0.25rem;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
           overflow: hidden;
-          transition: all 0.3s ease;
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
-        .guarantee-winners .winner-card {
-          background: linear-gradient(to bottom, #f0fff4, #ffffff);
-          border: 1px solid #c6f6d5;
+        .guarantee-card {
+          border-left: 3px solid #48bb78;
         }
         
-        .fcfs-winners .winner-card {
-          background: linear-gradient(to bottom, #fffaf0, #ffffff);
-          border: 1px solid #feebc8;
+        .fcfs-card {
+          border-left: 3px solid #ed8936;
         }
         
         .winner-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
         
-        .card-top {
-          padding: 1rem;
+        .card-content {
           display: flex;
-          align-items: center;
-          position: relative;
+          padding: 0.75rem;
         }
         
-        .guarantee-winners .card-top {
-          background-color: rgba(72, 187, 120, 0.1);
-          border-bottom: 2px solid rgba(72, 187, 120, 0.2);
-        }
-        
-        .fcfs-winners .card-top {
-          background-color: rgba(237, 137, 54, 0.1);
-          border-bottom: 2px solid rgba(237, 137, 54, 0.2);
-        }
-        
-        .winner-badge {
-          width: 28px;
-          height: 28px;
+        .winner-rank {
+          width: 1.5rem;
+          height: 1.5rem;
+          background-color: #f7fafc;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 50%;
-          font-weight: 800;
-          font-size: 0.9rem;
+          font-weight: 700;
+          font-size: 0.875rem;
+          color: #4a5568;
           margin-right: 0.75rem;
-          flex-shrink: 0;
+          border: 1px solid #e2e8f0;
         }
         
-        .guarantee-winners .winner-badge {
-          background-color: #48bb78;
-          color: white;
+        .guarantee-card .winner-rank {
+          color: #2f855a;
+          border-color: #c6f6d5;
+          background-color: #f0fff4;
         }
         
-        .fcfs-winners .winner-badge {
-          background-color: #ed8936;
-          color: white;
+        .fcfs-card .winner-rank {
+          color: #c05621;
+          border-color: #feebc8;
+          background-color: #fffaf0;
         }
         
-        .contract-link {
+        .winner-info {
+          flex: 1;
+          min-width: 0; /* Allow text truncation to work in flex child */
+        }
+        
+        .wallet-address {
+          display: block;
+          font-family: monospace;
+          font-size: 0.85rem;
           color: #4a5568;
           text-decoration: none;
-          font-family: monospace;
-          font-size: 0.9rem;
-          font-weight: 600;
-          transition: color 0.2s ease;
-          word-break: break-all;
+          margin-bottom: 0.5rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         
-        .guarantee-winners .contract-link:hover {
+        .guarantee-card .wallet-address:hover {
           color: #2f855a;
         }
         
-        .fcfs-winners .contract-link:hover {
+        .fcfs-card .wallet-address:hover {
           color: #c05621;
         }
         
-        .card-stats {
-          padding: 1rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          background-color: #ffffff;
-          height: 100%;
-        }
-        
-        .stat-item {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.85rem;
-        }
-        
-        .stat-label {
+        .winner-stats {
+          font-size: 0.75rem;
           color: #718096;
         }
         
-        .stat-value {
-          font-weight: 600;
-          color: #2d3748;
+        .stat {
+          display: flex;
+          justify-content: space-between;
         }
         
-        .guarantee-winners .stat-value {
-          color: #2f855a;
+        .stat span {
+          color: #a0aec0;
         }
         
-        .fcfs-winners .stat-value {
-          color: #c05621;
+        .guarantee-card .stat {
+          color: #38a169;
+        }
+        
+        .fcfs-card .stat {
+          color: #dd6b20;
         }
         
         .export-winners-container {
           display: flex;
           justify-content: center;
-          margin-top: 2rem;
+          margin-top: 1.5rem;
         }
         
         .export-winners-btn {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          padding: 0.875rem 1.75rem;
+          gap: 0.5rem;
+          padding: 0.6rem 1.25rem;
           background-color: #4CAF50;
           color: white;
           border: none;
-          border-radius: 0.5rem;
+          border-radius: 0.25rem;
           font-weight: 600;
-          font-size: 1rem;
+          font-size: 0.9rem;
           cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          transition: all 0.2s ease;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
         .export-winners-btn:hover {
           background-color: #45a049;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
         .export-winners-btn:active {
           transform: translateY(0);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
         .export-icon {
-          font-size: 1.25rem;
+          font-size: 1.1rem;
         }
         
         @media (min-width: 640px) {

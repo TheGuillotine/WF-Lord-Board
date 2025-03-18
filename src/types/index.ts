@@ -57,3 +57,24 @@ export interface Lord {
   
   export const LORD_SPECIES = ['All', 'Wolf', 'Owl', 'Raven', 'Boar', 'Fox'];
   export const LORD_RARITIES = ['All', 'Rare', 'Epic', 'Legendary', 'Mystic'];
+
+  // New types for staking activity
+  export interface StakingActivity {
+    transactionHash: string;
+    timestamp: number;
+    tokenId: string;
+    tokenName?: string;
+    owner: string;
+    actionType: 'stake' | 'unstake';
+    blockNumber: number;
+    attributes?: {
+      rank?: string;
+      specie?: string;
+    };
+  }
+
+  export interface StakingActivityResponse {
+    activities: StakingActivity[];
+    nextCursor?: string;
+    hasMore: boolean;
+  }

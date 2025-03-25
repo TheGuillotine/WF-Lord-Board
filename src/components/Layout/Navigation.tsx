@@ -28,6 +28,14 @@ export function Navigation() {
             </div>
           </Link>
         </li>
+        <li className={`nav-item ${isActive('/stakers-map')}`}>
+          <Link href="/stakers-map" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div className="nav-button">
+              <span className="nav-icon">🗺️</span>
+              <span className="nav-text">Stakers Map</span>
+            </div>
+          </Link>
+        </li>
         <li className={`nav-item ${isActive('/raffle')}`}>
           <Link href="/raffle" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="nav-button">

@@ -27,8 +27,8 @@
   transition: transform 0.2s ease-out;
 }
 
-/* Kingdom styles */
-.kingdom {
+/* Kingdom bubble styles */
+.kingdom-bubble {
   position: absolute;
   transform: translate(-50%, -50%);
   border-radius: 50%;
@@ -37,146 +37,91 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
   overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.7);
+  border: 3px solid rgba(255, 255, 255, 0.7);
+  z-index: 5;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.kingdom-bubble:hover {
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%) scale(1.05);
+  z-index: 10;
+}
+
+.kingdom-header {
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 5px 10px;
+  text-align: center;
+  color: white;
+  font-weight: bold;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kingdom-address {
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.kingdom-count {
+  font-size: 11px;
+  opacity: 0.9;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.lords-container {
+  position: relative;
+  width: 100%;
+  height: calc(100% - 25px);
+  overflow: hidden;
+}
+
+/* Lord emoji styles */
+.lord-emoji {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.lord-emoji:hover {
+  transform: translate(-50%, -50%) scale(1.3);
   z-index: 5;
 }
 
-.kingdom:hover {
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.5);
-  transform: translate(-50%, -50%) scale(1.05);
-  z-index: 10;
+/* Lord rarity colors */
+.rare-lord {
+  background-color: rgba(93, 169, 233, 0.8);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
 }
 
-.kingdom-inner {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  color: white;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
-  font-weight: bold;
-  padding: 5px;
-  text-align: center;
+.epic-lord {
+  background-color: rgba(160, 32, 240, 0.8);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
 }
 
-.kingdom-name {
-  font-size: 12px;
-  margin-bottom: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 90%;
+.legendary-lord {
+  background-color: rgba(255, 215, 0, 0.8);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
 }
 
-.kingdom-stats {
-  font-size: 11px;
-  opacity: 0.9;
-}
-
-/* Cluster styles */
-.cluster {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-  overflow: hidden;
-  border: 3px solid rgba(255, 255, 255, 0.8);
-  z-index: 10;
-}
-
-.cluster:hover {
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
-  transform: translate(-50%, -50%) scale(1.05);
-  z-index: 20;
-}
-
-.cluster-inner {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  color: white;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
-  font-weight: bold;
-  text-align: center;
-}
-
-.cluster-count {
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.cluster-label {
-  font-size: 12px;
-  opacity: 0.9;
-}
-
-/* Lord icons within kingdoms */
-.lord-icon {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-  transition: all 0.3s ease;
-}
-
-.lord-icon:hover {
-  transform: translate(-50%, -50%) scale(1.5);
-  z-index: 15;
-}
-
-/* Lord rarities */
-.lord-icon.rare {
-  background-color: #5da9e9;
-}
-
-.lord-icon.epic {
-  background-color: #a020f0;
-}
-
-.lord-icon.legendary {
-  background-color: #ffd700;
-}
-
-.lord-icon.mystic {
-  background-color: #ff1493;
-}
-
-/* Species within each rarity (represented as different shapes) */
-.lord-icon.wolf {
-  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-}
-
-.lord-icon.owl {
-  clip-path: circle(50% at 50% 50%);
-}
-
-.lord-icon.raven {
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-}
-
-.lord-icon.boar {
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-}
-
-.lord-icon.fox {
-  clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+.mystic-lord {
+  background-color: rgba(255, 20, 147, 0.8);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
 }
 
 /* Map controls */
@@ -258,37 +203,6 @@
   text-align: center;
 }
 
-/* Map status indicator */
-.map-status {
-  background-color: rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
-  padding: 10px 15px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  color: white;
-}
-
-.back-button {
-  background-color: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s ease;
-}
-
-.back-button:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-.status-text {
-  font-size: 14px;
-}
-
 /* Kingdom tooltip */
 .kingdom-tooltip {
   position: absolute;
@@ -310,6 +224,7 @@
   font-size: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   padding-bottom: 6px;
+  word-break: break-all;
 }
 
 .tooltip-section {
@@ -352,14 +267,6 @@
   color: #ff1493;
 }
 
-.tooltip-hint {
-  margin-top: 8px;
-  font-style: italic;
-  font-size: 12px;
-  opacity: 0.7;
-  text-align: center;
-}
-
 /* Map legend */
 .map-legend {
   position: absolute;
@@ -388,25 +295,15 @@
   margin-bottom: 4px;
 }
 
-.legend-icon {
-  width: 12px;
-  height: 12px;
+.legend-emoji {
+  width: 24px;
+  height: 24px;
   margin-right: 8px;
-  border-radius: 2px;
-}
-
-.legend-icon.cluster-icon {
-  width: 16px;
-  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.5);
-  border: 2px solid white;
-}
-
-.legend-icon.kingdom-icon {
-  border-radius: 50%;
-  background-color: rgba(100, 149, 237, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  font-size: 14px;
 }
 
 .legend-label {

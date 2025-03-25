@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Kingdom, LordRepresentation } from '../../hooks/useStakersMapData';
 import { getMapDimensions, calculateLordPositions } from '../../utils/mapGeneration';
-import '../../styles/stakers-map.css';
-import '../../styles/stakers-map-extras.css';
 
 interface StakersMapProps {
   kingdoms: Kingdom[];

@@ -1,19 +1,21 @@
-/* Base container */
-.stakers-container {
+/* Map container */
+.map-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
   background-color: #1a2c42;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 20px;
   margin-bottom: 2rem;
   color: white;
 }
 
-/* Stakers filters */
-.stakers-filters {
+/* Map filters */
+.map-filters {
   background-color: rgba(0, 0, 0, 0.3);
   border-radius: 8px;
   padding: 15px;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .filter-row {
@@ -69,187 +71,231 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* Metrics panel */
-.metrics-panel {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 20px;
+/* Map wrapper for zooming and panning */
+.map-wrapper {
+  width: 100%;
+  height: 800px;
+  overflow: hidden;
+  touch-action: none;
+  position: relative;
 }
 
-.metrics-title {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 12px;
-  text-align: center;
+/* Map canvas */
+.map-canvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-origin: 0 0;
+  transition: transform 0.2s ease-out;
 }
 
-.metrics-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 15px;
-}
-
-.metric-item {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
-  padding: 10px;
-  flex: 1;
-  min-width: 120px;
-  text-align: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.metric-item.rare {
-  border-left: 3px solid #5da9e9;
-}
-
-.metric-item.epic {
-  border-left: 3px solid #a020f0;
-}
-
-.metric-item.legendary {
-  border-left: 3px solid #ffd700;
-}
-
-.metric-item.mystic {
-  border-left: 3px solid #ff1493;
-}
-
-.metric-value {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.metric-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* Stakers content */
-.stakers-content {
-  margin-bottom: 20px;
-}
-
-.stakers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-/* Kingdom card */
-.kingdom-card {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+/* Kingdom node styles */
+.kingdom-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  cursor: pointer;
   overflow: hidden;
   transition: all 0.3s ease;
-}
-
-.kingdom-card:hover {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  transform: translateY(-2px);
-}
-
-.kingdom-card.expanded {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-}
-
-.kingdom-header {
-  padding: 12px 15px;
-  cursor: pointer;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  z-index: 5;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  transition: background-color 0.2s ease;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.7);
 }
 
-.kingdom-header:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+.kingdom-node:hover {
+  transform: translate(-50%, -50%) scale(1.05);
+  z-index: 10;
+  border-color: white;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
-.kingdom-main-info {
-  flex: 1;
+.kingdom-node.selected {
+  transform: translate(-50%, -50%) scale(1.1);
+  z-index: 15;
+  border-color: white;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
 }
 
-.kingdom-address {
-  font-weight: bold;
-  font-size: 15px;
-  margin-bottom: 3px;
-  display: block;
-}
-
-.kingdom-stats {
-  display: flex;
-  gap: 10px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.total-lords {
-  font-weight: bold;
-}
-
-.raffle-power {
+/* Pie chart background */
+.kingdom-pie {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
   opacity: 0.8;
 }
 
-.kingdom-rarity-breakdown {
+/* Content inside kingdom node */
+.kingdom-content {
+  position: relative;
+  z-index: 2;
   display: flex;
-  gap: 10px;
-  margin-right: 15px;
-}
-
-.rarity-count {
-  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
-}
-
-.rarity-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.rarity-count.rare .rarity-dot {
-  background-color: #5da9e9;
-}
-
-.rarity-count.epic .rarity-dot {
-  background-color: #a020f0;
-}
-
-.rarity-count.legendary .rarity-dot {
-  background-color: #ffd700;
-}
-
-.rarity-count.mystic .rarity-dot {
-  background-color: #ff1493;
-}
-
-.expand-icon {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
-  transition: transform 0.3s ease;
-}
-
-.expanded .expand-icon {
-  transform: rotate(180deg);
-}
-
-/* Kingdom details */
-.kingdom-details {
+  justify-content: center;
+  width: 100%;
+  height: 100%;
   padding: 15px;
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
 }
 
-.lords-grid {
+.kingdom-address {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.lords-count {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.rarity-counts {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.rare-count, .epic-count, .legendary-count, .mystic-count {
+  padding: 3px 6px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.rare-count {
+  background-color: rgba(93, 169, 233, 0.7);
+}
+
+.epic-count {
+  background-color: rgba(160, 32, 240, 0.7);
+}
+
+.legendary-count {
+  background-color: rgba(255, 215, 0, 0.7);
+}
+
+.mystic-count {
+  background-color: rgba(255, 20, 147, 0.7);
+}
+
+/* Selected kingdom detail popup */
+.kingdom-detail-popup {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 400px;
+  max-width: calc(100% - 40px);
+  background-color: rgba(0, 0, 0, 0.85);
+  border-radius: 10px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.popup-header {
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.popup-title {
+  flex: 1;
+}
+
+.popup-address {
+  display: block;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  word-break: break-all;
+}
+
+.popup-stats {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.popup-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  padding: 0;
+  margin-left: 10px;
+  line-height: 1;
+}
+
+.popup-close:hover {
+  opacity: 1;
+}
+
+.popup-content {
+  padding: 15px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* Rarity summary in popup */
+.popup-rarity-summary {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.summary-item {
+  text-align: center;
+  border-radius: 8px;
+  padding: 10px;
+  flex: 1;
+}
+
+.summary-item.rare {
+  background-color: rgba(93, 169, 233, 0.2);
+}
+
+.summary-item.epic {
+  background-color: rgba(160, 32, 240, 0.2);
+}
+
+.summary-item.legendary {
+  background-color: rgba(255, 215, 0, 0.2);
+}
+
+.summary-item.mystic {
+  background-color: rgba(255, 20, 147, 0.2);
+}
+
+.summary-count {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.summary-label {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Lords list in popup */
+.lords-container {
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -338,100 +384,98 @@
   font-size: 11px;
 }
 
-/* Pagination */
-.pagination {
+/* Map controls */
+.map-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
-  margin-top: 20px;
+  z-index: 30;
 }
 
-.pagination-button {
-  padding: 8px 12px;
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.1);
+.map-control-button {
+  width: 40px;
+  height: 40px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #1a2c42;
   border: none;
-  color: white;
+  border-radius: 4px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
 }
 
-.pagination-button:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.2);
+.map-control-button:hover {
+  background-color: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-.pagination-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-info {
-  font-size: 14px;
-}
-
-/* Legend */
-.stakers-legend {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  padding: 15px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+/* Map legend */
+.map-legend {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  z-index: 30;
 }
 
 .legend-section {
-  min-width: 150px;
-}
-
-.legend-title {
-  font-size: 14px;
-  font-weight: bold;
   margin-bottom: 8px;
 }
 
-.legend-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 15px;
+.legend-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 13px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 13px;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 12px;
 }
 
-.legend-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
+.legend-color {
+  width: 20px;
+  height: 10px;
+  border-radius: 2px;
 }
 
-.legend-dot.rare {
+.legend-color.rare {
   background-color: #5da9e9;
 }
 
-.legend-dot.epic {
+.legend-color.epic {
   background-color: #a020f0;
 }
 
-.legend-dot.legendary {
+.legend-color.legendary {
   background-color: #ffd700;
 }
 
-.legend-dot.mystic {
+.legend-color.mystic {
   background-color: #ff1493;
 }
 
-.legend-emoji {
-  font-size: 14px;
+.legend-label {
+  font-style: italic;
+  font-size: 11px;
+  opacity: 0.7;
 }
 
 /* Loading state */
-.stakers-loading {
+.map-loading {
   width: 100%;
   height: 400px;
   display: flex;
@@ -460,7 +504,7 @@
 }
 
 /* Empty state */
-.stakers-empty {
+.map-empty {
   width: 100%;
   height: 300px;
   display: flex;
@@ -478,13 +522,8 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .stakers-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .metrics-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .map-wrapper {
+    height: 500px;
   }
   
   .filter-row {
@@ -492,7 +531,20 @@
     align-items: stretch;
   }
   
-  .search-box {
-    width: 100%;
+  .kingdom-detail-popup {
+    top: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: calc(100% - 20px);
+  }
+  
+  .popup-content {
+    max-height: none;
+  }
+  
+  .map-legend {
+    top: auto;
+    bottom: 70px;
+    left: 10px;
   }
 }

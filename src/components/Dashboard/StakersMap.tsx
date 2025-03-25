@@ -9,7 +9,7 @@ interface StakersMapProps {
 
 export function StakersMap({ kingdoms, loading }: StakersMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.7);
+  const [scale, setScale] = useState(0.5); // Start more zoomed out
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -61,56 +61,75 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
       filteredKingdoms.sort((a, b) => b.totalLords - a.totalLords);
     }
     
-    // Separate kingdoms based on size - for weighted positioning
-    const largeKingdoms = filteredKingdoms.filter(k => k.totalLords >= 10);
-    const mediumKingdoms = filteredKingdoms.filter(k => k.totalLords >= 5 && k.totalLords < 10);
-    const smallKingdoms = filteredKingdoms.filter(k => k.totalLords < 5);
+    // Get count brackets for sizing
+    const calculateSizeGroup = (total: number) => {
+      if (total >= 15) return 'large';
+      if (total >= 7) return 'medium';
+      return 'small';
+    };
     
-    // Place kingdoms in zones based on importance
-    // This gives more space to important kingdoms and groups similar ones
-    const zoneRadius = Math.min(mapWidth, mapHeight) * 0.35;
+    // Group kingdoms by size for different placement strategies
+    const largeKingdoms = filteredKingdoms.filter(k => calculateSizeGroup(k.totalLords) === 'large');
+    const mediumKingdoms = filteredKingdoms.filter(k => calculateSizeGroup(k.totalLords) === 'medium');
+    const smallKingdoms = filteredKingdoms.filter(k => calculateSizeGroup(k.totalLords) === 'small');
+    
+    // Use structured grid layouts to ensure spacing
     const centerX = mapWidth / 2;
     const centerY = mapHeight / 2;
     
-    // Position large kingdoms in a circle closer to center
+    // 1. Position large kingdoms in a central ring with good spacing
+    const largeRadius = Math.min(mapWidth, mapHeight) * 0.2;
     largeKingdoms.forEach((kingdom, index) => {
       const angle = (index / largeKingdoms.length) * 2 * Math.PI;
-      kingdom.position = {
-        x: centerX + Math.cos(angle) * zoneRadius * 0.6,
-        y: centerY + Math.sin(angle) * zoneRadius * 0.6
-      };
+      const x = centerX + Math.cos(angle) * largeRadius;
+      const y = centerY + Math.sin(angle) * largeRadius;
+      kingdom.position = { x, y };
     });
     
-    // Position medium kingdoms in a middle circle
+    // 2. Position medium kingdoms in a middle ring
+    const mediumRadius = Math.min(mapWidth, mapHeight) * 0.35;
     mediumKingdoms.forEach((kingdom, index) => {
       const angle = (index / mediumKingdoms.length) * 2 * Math.PI;
-      kingdom.position = {
-        x: centerX + Math.cos(angle) * zoneRadius * 1.0,
-        y: centerY + Math.sin(angle) * zoneRadius * 1.0
-      };
+      const x = centerX + Math.cos(angle) * mediumRadius;
+      const y = centerY + Math.sin(angle) * mediumRadius;
+      kingdom.position = { x, y };
     });
     
-    // Position small kingdoms in an outer circle
+    // 3. Position small kingdoms in multiple outer rings
+    // This spreads them across multiple rings to avoid overcrowding
+    const smallCount = smallKingdoms.length;
+    const ringsNeeded = Math.ceil(smallCount / 50); // Approx 50 per ring
+    
     smallKingdoms.forEach((kingdom, index) => {
-      const angle = (index / smallKingdoms.length) * 2 * Math.PI;
-      kingdom.position = {
-        x: centerX + Math.cos(angle) * zoneRadius * 1.4,
-        y: centerY + Math.sin(angle) * zoneRadius * 1.4
-      };
+      // Determine which ring this kingdom belongs to
+      const ringIndex = Math.floor(index / (smallCount / ringsNeeded));
+      const ringPosition = index % Math.ceil(smallCount / ringsNeeded);
+      
+      // Calculate position in the appropriate ring
+      const itemsInRing = Math.ceil(smallCount / ringsNeeded);
+      const angle = (ringPosition / itemsInRing) * 2 * Math.PI;
+      
+      // Each outer ring gets progressively larger
+      const radius = Math.min(mapWidth, mapHeight) * (0.45 + ringIndex * 0.1);
+      
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius;
+      kingdom.position = { x, y };
     });
     
-    // Apply force-directed spacing to avoid overlap
-    const iteration = 30; // Number of iterations for force directed algorithm
-    const repulsionStrength = 800; // Repulsion between kingdoms
+    // Apply final adjustments with a force-directed algorithm for fine-tuning
+    const iteration = 40; // More iterations for better spacing
+    const repulsionStrength = 3000; // Significantly increased repulsion
     
-    // Create a working copy with positions
+    // Create a working copy with positions and velocities
     let workingKingdoms = filteredKingdoms.map(kingdom => ({
       ...kingdom,
       vx: 0, // velocity x
       vy: 0, // velocity y
+      size: sizeForLords(kingdom.totalLords), // Calculate bubble size based on lords count
     }));
 
-    // Run force-directed algorithm iterations to space them out
+    // Run force-directed algorithm iterations to refine spacing
     for (let i = 0; i < iteration; i++) {
       // Calculate repulsive forces
       for (let j = 0; j < workingKingdoms.length; j++) {
@@ -126,15 +145,20 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
           
           if (distSq === 0) continue;
           
-          // Calculate repulsive force
           const dist = Math.sqrt(distSq);
-          const repulsion = repulsionStrength / (dist * dist);
           
-          fx += (dx / dist) * repulsion;
-          fy += (dy / dist) * repulsion;
+          // Calculate minimum distance needed to prevent overlap (based on both bubble sizes)
+          const minDist = (workingKingdoms[j].size + workingKingdoms[k].size) / 1.8;
+          
+          // Apply strong repulsion if bubbles are too close
+          if (dist < minDist) {
+            const repulsion = repulsionStrength * (minDist - dist) / dist;
+            fx += (dx / dist) * repulsion;
+            fy += (dy / dist) * repulsion;
+          }
         }
         
-        // Apply forces (with damping)
+        // Apply force with damping
         workingKingdoms[j].vx = (workingKingdoms[j].vx + fx) * 0.5;
         workingKingdoms[j].vy = (workingKingdoms[j].vy + fy) * 0.5;
         
@@ -143,15 +167,33 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
         workingKingdoms[j].position.y += workingKingdoms[j].vy;
         
         // Keep within bounds
-        const margin = 100;
+        const margin = workingKingdoms[j].size / 2 + 50;
         workingKingdoms[j].position.x = Math.max(margin, Math.min(mapWidth - margin, workingKingdoms[j].position.x));
         workingKingdoms[j].position.y = Math.max(margin, Math.min(mapHeight - margin, workingKingdoms[j].position.y));
       }
     }
 
-    // Update the kingdoms with new positions
+    // Update the kingdoms with new positions and sizes
     setVisibleKingdoms(workingKingdoms.map(({ vx, vy, ...kingdom }) => kingdom));
   }, [kingdoms, filters, searchTerm, mapWidth, mapHeight]);
+
+  // Calculate bubble size based on lords count
+  const sizeForLords = (count: number): number => {
+    // Logarithmic scale for sizing to avoid huge bubbles
+    const baseSize = 50;
+    const minSize = 40;
+    const maxSize = 120;
+    
+    let size;
+    if (count <= 1) {
+      size = minSize;
+    } else {
+      // Logarithmic scaling
+      size = baseSize + Math.log2(count) * 15;
+    }
+    
+    return Math.min(maxSize, Math.max(minSize, size));
+  };
 
   // Functions for map interactivity
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -162,8 +204,7 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
         y: e.clientY - position.y,
       });
       
-      // Clear selected kingdom when starting to drag
-      setSelectedKingdom(null);
+      // Don't clear selection here to allow interaction with the popup
     }
   };
 
@@ -193,21 +234,23 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
   };
 
   const handleResetView = () => {
-    setScale(0.7);
+    setScale(0.5);
     setPosition({ x: 0, y: 0 });
+    setSelectedKingdom(null);
   };
 
-  const handleKingdomClick = (kingdom: Kingdom) => {
+  const handleKingdomClick = (kingdom: Kingdom, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent click from closing popup when clicking on a kingdom
     setSelectedKingdom(prev => prev?.id === kingdom.id ? null : kingdom);
+  };
+
+  const handleMapClick = () => {
+    // Close popup when clicking on empty map area
+    setSelectedKingdom(null);
   };
 
   const handleFilterChange = (newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
-  };
-
-  // Format address for display
-  const formatAddress = (address: string) => {
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
 
   // Get emojis for species
@@ -232,56 +275,47 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
       default: return '';
     }
   };
+  
+  // Get rarity color
+  const getRarityColor = (rarity: string): string => {
+    switch (rarity.toLowerCase()) {
+      case 'rare': return '#5da9e9';
+      case 'epic': return '#a020f0';
+      case 'legendary': return '#ffd700';
+      case 'mystic': return '#ff1493';
+      default: return '#ffffff';
+    }
+  };
 
   // Render kingdoms on the map
   const renderMapKingdoms = () => {
     if (visibleKingdoms.length === 0) return null;
     
     return visibleKingdoms.map((kingdom) => {
-      // Scale kingdom size based on total lords, with a reasonable min/max
-      const minSize = 80;
-      const maxSize = 140;
-      const scaleFactor = 8;
+      // Determine dominant rarity color for the border
+      let dominantRarity = 'rare';
+      let maxCount = kingdom.rareLords.length;
       
-      const size = Math.max(
-        minSize,
-        Math.min(maxSize, minSize + Math.sqrt(kingdom.totalLords) * scaleFactor)
-      );
-      
-      // Calculate breakdown of lord types for the mini pie chart
-      const total = kingdom.totalLords;
-      const rarePct = kingdom.rareLords.length / total;
-      const epicPct = kingdom.epicLords.length / total;
-      const legendaryPct = kingdom.legendaryLords.length / total;
-      const mysticPct = kingdom.mysticLords.length / total;
-      
-      // Create simple CSS conic gradient for the pie chart
-      let conicGradient = 'conic-gradient(';
-      let currentAngle = 0;
-      
-      if (rarePct > 0) {
-        conicGradient += `#5da9e9 0deg ${rarePct * 360}deg`;
-        currentAngle += rarePct * 360;
+      if (kingdom.epicLords.length > maxCount) {
+        dominantRarity = 'epic';
+        maxCount = kingdom.epicLords.length;
+      }
+      if (kingdom.legendaryLords.length > maxCount) {
+        dominantRarity = 'legendary';
+        maxCount = kingdom.legendaryLords.length;
+      }
+      if (kingdom.mysticLords.length > maxCount) {
+        dominantRarity = 'mystic';
+        maxCount = kingdom.mysticLords.length;
       }
       
-      if (epicPct > 0) {
-        if (currentAngle > 0) conicGradient += ', ';
-        conicGradient += `#a020f0 ${currentAngle}deg ${currentAngle + epicPct * 360}deg`;
-        currentAngle += epicPct * 360;
-      }
+      const borderColor = getRarityColor(dominantRarity);
       
-      if (legendaryPct > 0) {
-        if (currentAngle > 0) conicGradient += ', ';
-        conicGradient += `#ffd700 ${currentAngle}deg ${currentAngle + legendaryPct * 360}deg`;
-        currentAngle += legendaryPct * 360;
-      }
+      // Calculate font size based on bubble size
+      const fontSize = Math.max(16, Math.min(28, kingdom.size / 4));
       
-      if (mysticPct > 0) {
-        if (currentAngle > 0) conicGradient += ', ';
-        conicGradient += `#ff1493 ${currentAngle}deg ${currentAngle + mysticPct * 360}deg`;
-      }
-      
-      conicGradient += ')';
+      // Only show address for bubbles above a certain size
+      const showAddress = kingdom.size >= 60;
       
       return (
         <div
@@ -290,20 +324,23 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
           style={{
             left: kingdom.position.x,
             top: kingdom.position.y,
-            width: size,
-            height: size,
+            width: kingdom.size,
+            height: kingdom.size,
+            borderColor: borderColor,
           }}
-          onClick={() => handleKingdomClick(kingdom)}
+          onClick={(e) => handleKingdomClick(kingdom, e)}
         >
-          <div className="kingdom-pie" style={{ background: conicGradient }}></div>
           <div className="kingdom-content">
-            <div className="kingdom-address">{formatAddress(kingdom.address)}</div>
-            <div className="lords-count">{kingdom.totalLords}</div>
-            <div className="rarity-counts">
-              <span className="rare-count">{kingdom.rareLords.length}</span>
-              <span className="epic-count">{kingdom.epicLords.length}</span>
-              <span className="legendary-count">{kingdom.legendaryLords.length}</span>
-              <span className="mystic-count">{kingdom.mysticLords.length}</span>
+            {showAddress && (
+              <div className="kingdom-address">
+                {kingdom.address.substring(0, 6)}...
+              </div>
+            )}
+            <div 
+              className="lords-count"
+              style={{ fontSize: `${fontSize}px` }}
+            >
+              {kingdom.totalLords}
             </div>
           </div>
         </div>
@@ -335,10 +372,7 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
           </div>
           <button 
             className="popup-close" 
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedKingdom(null);
-            }}
+            onClick={() => setSelectedKingdom(null)}
           >
             ×
           </button>
@@ -476,7 +510,7 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
             <span>Mystic</span>
           </div>
         </div>
-        <div className="legend-label">Click any kingdom for details</div>
+        <div className="legend-label">Click any bubble for details</div>
       </div>
     );
   };
@@ -525,6 +559,7 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onClick={handleMapClick}
       >
         <div
           className="map-canvas"

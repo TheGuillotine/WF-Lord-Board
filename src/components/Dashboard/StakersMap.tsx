@@ -9,7 +9,7 @@ interface StakersMapProps {
 
 export function StakersMap({ kingdoms, loading }: StakersMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.35); // Start with a more zoomed out view
+  const [scale, setScale] = useState(0.4); // Start even more zoomed out
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -21,10 +21,10 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
     sortBy: 'rafflePower',
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSmall, setShowSmall] = useState(false);
 
-  // Use a much larger map area to give more space between elements
-  const mapWidth = 3600;
-  const mapHeight = 3600;
+  // Get map dimensions
+  const { width: mapWidth, height: mapHeight } = getMapDimensions();
 
   // Apply spacing algorithm to prevent overcrowding
   useEffect(() => {
@@ -52,6 +52,11 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
         if (rarityKey && kingdom[rarityKey].length === 0) return false;
       }
       
+      // Only show kingdoms with 3+ lords unless explicitly showing small kingdoms or zoomed in
+      if (!showSmall && scale < 0.7 && kingdom.totalLords < 3) {
+        return false;
+      }
+      
       return true;
     });
     
@@ -62,88 +67,161 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
       filteredKingdoms.sort((a, b) => b.totalLords - a.totalLords);
     }
     
-    // Calculate sizes for all kingdoms
-    const kingdomsWithSizes = filteredKingdoms.map(kingdom => ({
+    // Get count brackets for sizing
+    const calculateSizeGroup = (total: number) => {
+      if (total >= 15) return 'large';
+      if (total >= 7) return 'medium';
+      return 'small';
+    };
+    
+    // Group kingdoms by size for different placement strategies
+    const largeKingdoms = filteredKingdoms.filter(k => calculateSizeGroup(k.totalLords) === 'large');
+    const mediumKingdoms = filteredKingdoms.filter(k => calculateSizeGroup(k.totalLords) === 'medium');
+    const smallKingdoms = filteredKingdoms.filter(k => calculateSizeGroup(k.totalLords) === 'small');
+    
+    // Use a grid layout approach with more spacing
+    const centerX = mapWidth / 2;
+    const centerY = mapHeight / 2;
+    
+    // Distribute large kingdoms in a central ring with more spacing
+    const largeRadius = Math.min(mapWidth, mapHeight) * 0.25;
+    largeKingdoms.forEach((kingdom, index) => {
+      const angle = (index / largeKingdoms.length) * 2 * Math.PI;
+      const x = centerX + Math.cos(angle) * largeRadius;
+      const y = centerY + Math.sin(angle) * largeRadius;
+      kingdom.position = { x, y };
+    });
+    
+    // Position medium kingdoms in a middle ring with more spacing
+    const mediumRadius = Math.min(mapWidth, mapHeight) * 0.45;
+    mediumKingdoms.forEach((kingdom, index) => {
+      const angle = (index / mediumKingdoms.length) * 2 * Math.PI;
+      const x = centerX + Math.cos(angle) * mediumRadius;
+      const y = centerY + Math.sin(angle) * mediumRadius;
+      kingdom.position = { x, y };
+    });
+    
+    // Position small kingdoms in multiple outer rings to avoid overcrowding
+    const smallCount = smallKingdoms.length;
+    const ringsNeeded = Math.max(1, Math.ceil(smallCount / 40)); // Max 40 per ring
+    
+    smallKingdoms.forEach((kingdom, index) => {
+      // Determine which ring this kingdom belongs to
+      const ringIndex = Math.floor(index / (smallCount / ringsNeeded));
+      const ringPosition = index % Math.ceil(smallCount / ringsNeeded);
+      
+      // Calculate position in the appropriate ring
+      const itemsInRing = Math.ceil(smallCount / ringsNeeded);
+      const angle = (ringPosition / itemsInRing) * 2 * Math.PI;
+      
+      // Each outer ring gets progressively larger with more spacing
+      const radius = Math.min(mapWidth, mapHeight) * (0.6 + ringIndex * 0.15);
+      
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius;
+      kingdom.position = { x, y };
+    });
+    
+    // Apply stronger force-directed algorithm
+    const iteration = 60; // More iterations for better separation
+    const repulsionStrength = 5000; // Much stronger repulsion
+    
+    // Create a working copy with positions and velocities
+    let workingKingdoms = filteredKingdoms.map(kingdom => ({
       ...kingdom,
-      size: sizeForLords(kingdom.totalLords),
+      vx: 0, // velocity x
+      vy: 0, // velocity y
+      size: sizeForLords(kingdom.totalLords), // Calculate bubble size based on lords count
     }));
-    
-    // Grid-based placement to ensure no overlap
-    const gridPlacement = createGridLayout(kingdomsWithSizes, mapWidth, mapHeight);
-    
-    setVisibleKingdoms(gridPlacement);
-  }, [kingdoms, filters, searchTerm]);
 
-  // Create a grid-based layout to prevent overlap
-  const createGridLayout = (kingdomsWithSizes: Kingdom[], width: number, height: number) => {
-    const centerX = width / 2;
-    const centerY = height / 2;
-    
-    // Calculate the maximum size of any kingdom
-    const maxSize = Math.max(...kingdomsWithSizes.map(k => k.size));
-    
-    // Calculate grid cell size based on the largest kingdom size plus padding
-    const cellSize = maxSize * 1.5;
-    
-    // Spiral layout algorithm
-    let x = 0;
-    let y = 0;
-    let dx = 0;
-    let dy = -1;
-    
-    const result = [...kingdomsWithSizes];
-    
-    // Start with a larger kingdom in the center if available
-    const sortedBySize = [...result].sort((a, b) => b.totalLords - a.totalLords);
-    if (sortedBySize.length > 0) {
-      sortedBySize[0].position = { x: centerX, y: centerY };
-    }
-    
-    // Place remaining kingdoms in spiral pattern
-    for (let i = 1; i < result.length; i++) {
-      // If we're on a corner, change direction
-      if (x === y || (x < 0 && x === -y) || (x > 0 && x === 1 - y)) {
-        const temp = dx;
-        dx = -dy;
-        dy = temp;
+    // Run force-directed algorithm iterations
+    for (let i = 0; i < iteration; i++) {
+      // Calculate repulsive forces
+      for (let j = 0; j < workingKingdoms.length; j++) {
+        let fx = 0;
+        let fy = 0;
+        
+        for (let k = 0; k < workingKingdoms.length; k++) {
+          if (j === k) continue;
+          
+          const dx = workingKingdoms[j].position.x - workingKingdoms[k].position.x;
+          const dy = workingKingdoms[j].position.y - workingKingdoms[k].position.y;
+          const distSq = dx * dx + dy * dy;
+          
+          if (distSq === 0) continue;
+          
+          const dist = Math.sqrt(distSq);
+          
+          // Calculate minimum distance needed (based on both bubble sizes with extra buffer)
+          const minDist = (workingKingdoms[j].size + workingKingdoms[k].size) / 1.5;
+          
+          // Apply stronger repulsion if bubbles are too close
+          if (dist < minDist) {
+            const repulsion = repulsionStrength * (minDist - dist) / dist;
+            fx += (dx / dist) * repulsion;
+            fy += (dy / dist) * repulsion;
+          }
+        }
+        
+        // Apply centerward attraction force to prevent bubbles from going too far
+        const cx = centerX - workingKingdoms[j].position.x;
+        const cy = centerY - workingKingdoms[j].position.y;
+        const distToCenter = Math.sqrt(cx * cx + cy * cy);
+        const maxDistFromCenter = Math.min(mapWidth, mapHeight) * 0.5;
+        
+        if (distToCenter > maxDistFromCenter) {
+          const attractionForce = 0.1 * (distToCenter - maxDistFromCenter);
+          fx += (cx / distToCenter) * attractionForce;
+          fy += (cy / distToCenter) * attractionForce;
+        }
+        
+        // Apply force with damping
+        workingKingdoms[j].vx = (workingKingdoms[j].vx + fx) * 0.5;
+        workingKingdoms[j].vy = (workingKingdoms[j].vy + fy) * 0.5;
+        
+        // Update position
+        workingKingdoms[j].position.x += workingKingdoms[j].vx;
+        workingKingdoms[j].position.y += workingKingdoms[j].vy;
+        
+        // Keep within bounds with larger margin
+        const margin = workingKingdoms[j].size + 30;
+        workingKingdoms[j].position.x = Math.max(margin, Math.min(mapWidth - margin, workingKingdoms[j].position.x));
+        workingKingdoms[j].position.y = Math.max(margin, Math.min(mapHeight - margin, workingKingdoms[j].position.y));
       }
-      
-      // Update spiral position
-      x += dx;
-      y += dy;
-      
-      // Calculate distance from center for scaling spiral
-      const distance = Math.max(Math.abs(x), Math.abs(y));
-      const scale = 1 + distance * 0.5; // Scale spiral outward faster
-      
-      // Calculate actual coordinates from spiral indices
-      const posX = centerX + x * cellSize * scale;
-      const posY = centerY + y * cellSize * scale;
-      
-      // Assign position
-      result[i].position = { x: posX, y: posY };
     }
-    
-    return result;
-  };
+
+    // Update the kingdoms with new positions and sizes
+    setVisibleKingdoms(workingKingdoms.map(({ vx, vy, ...kingdom }) => kingdom));
+  }, [kingdoms, filters, searchTerm, mapWidth, mapHeight, scale, showSmall]);
 
   // Calculate bubble size based on lords count
   const sizeForLords = (count: number): number => {
     // Logarithmic scale for sizing to avoid huge bubbles
-    const baseSize = 60;
-    const minSize = 50;
-    const maxSize = 120;
+    const baseSize = 40;
+    const minSize = 34;
+    const maxSize = 100;
     
     let size;
     if (count <= 1) {
       size = minSize;
     } else {
-      // Logarithmic scaling
-      size = baseSize + Math.log2(count) * 15;
+      // Logarithmic scaling for more reasonable sizing
+      size = baseSize + Math.log2(count) * 10;
     }
     
     return Math.min(maxSize, Math.max(minSize, size));
   };
+
+  // Handle zoom level changes to show/hide smaller bubbles
+  useEffect(() => {
+    // Automatically show small kingdoms when zoomed in
+    if (scale >= 0.7) {
+      setShowSmall(true);
+    } else if (scale <= 0.4) {
+      // Hide small kingdoms when zoomed out too far
+      setShowSmall(false);
+    }
+  }, [scale]);
 
   // Functions for map interactivity
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -178,11 +256,11 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
   };
 
   const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.2, 0.1));
+    setScale(prev => Math.max(prev - 0.2, 0.3));
   };
 
   const handleResetView = () => {
-    setScale(0.35);
+    setScale(0.4);
     setPosition({ x: 0, y: 0 });
     setSelectedKingdom(null);
   };
@@ -199,6 +277,10 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
 
   const handleFilterChange = (newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  const toggleShowSmall = () => {
+    setShowSmall(prev => !prev);
   };
 
   // Get emojis for species
@@ -260,10 +342,10 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
       const borderColor = getRarityColor(dominantRarity);
       
       // Calculate font size based on bubble size
-      const fontSize = Math.max(16, Math.min(28, kingdom.size / 4));
+      const fontSize = Math.max(12, Math.min(24, kingdom.size / 4));
       
       // Only show address for bubbles above a certain size
-      const showAddress = kingdom.size >= 70;
+      const showAddress = kingdom.size >= 60;
       
       return (
         <div
@@ -426,10 +508,19 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
               <option value="totalLords">Total Lords</option>
             </select>
           </div>
+          
+          <button 
+            className="toggle-small-button"
+            onClick={toggleShowSmall}
+            title={showSmall ? "Hide small kingdoms" : "Show all kingdoms"}
+          >
+            {showSmall ? "Hide Small" : "Show All"}
+          </button>
         </div>
         
         <div className="results-info">
           Showing {visibleKingdoms.length} stakers out of {kingdoms.length} total
+          {!showSmall && scale < 0.7 && " (zoom in or click 'Show All' to see smaller kingdoms)"}
         </div>
       </div>
     );

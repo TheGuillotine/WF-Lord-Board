@@ -9,7 +9,7 @@ interface StakersMapProps {
 
 export function StakersMap({ kingdoms, loading }: StakersMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.5); // Start more zoomed out
+  const [scale, setScale] = useState(0.35); // Start with a more zoomed out view
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -22,36 +22,9 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
   });
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Get map dimensions
-  const mapWidth = 2400; // Larger canvas to allow for better spacing
-  const mapHeight = 1800;
-
-  // Prevent scrolling on wheel events
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      if (mapRef.current && mapRef.current.contains(e.target as Node)) {
-        e.preventDefault();
-        
-        // Zoom with wheel
-        if (e.deltaY < 0) {
-          setScale(prev => Math.min(prev + 0.1, 3));
-        } else {
-          setScale(prev => Math.max(prev - 0.1, 0.2));
-        }
-      }
-    };
-    
-    const mapElement = mapRef.current;
-    if (mapElement) {
-      mapElement.addEventListener('wheel', handleWheel, { passive: false });
-    }
-    
-    return () => {
-      if (mapElement) {
-        mapElement.removeEventListener('wheel', handleWheel);
-      }
-    };
-  }, []);
+  // Use a much larger map area to give more space between elements
+  const mapWidth = 3600;
+  const mapHeight = 3600;
 
   // Apply spacing algorithm to prevent overcrowding
   useEffect(() => {
@@ -89,131 +62,84 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
       filteredKingdoms.sort((a, b) => b.totalLords - a.totalLords);
     }
     
-    // IMPROVED LAYOUT STRATEGY - Hexagonal grid pattern
-    // This avoids pushing bubbles to corners and provides more even spacing
-    
-    // 1. Calculate bubble sizes first
+    // Calculate sizes for all kingdoms
     const kingdomsWithSizes = filteredKingdoms.map(kingdom => ({
       ...kingdom,
       size: sizeForLords(kingdom.totalLords),
     }));
     
-    // 2. Calculate the average size to determine spacing
-    const totalSize = kingdomsWithSizes.reduce((sum, k) => sum + k.size, 0);
-    const avgSize = totalSize / kingdomsWithSizes.length;
+    // Grid-based placement to ensure no overlap
+    const gridPlacement = createGridLayout(kingdomsWithSizes, mapWidth, mapHeight);
     
-    // 3. Set up hexagonal grid parameters
-    const hexSpacing = avgSize * 1.5; // Spacing between hexagon centers
-    const hexWidth = hexSpacing;
-    const hexHeight = hexSpacing * 0.866; // height = width * sin(60°)
-    
-    // 4. Calculate how many columns and rows we need
-    const numKingdoms = kingdomsWithSizes.length;
-    const gridColumns = Math.ceil(Math.sqrt(numKingdoms * 1.2)); // More columns than rows for widescreen
-    
-    // 5. Place kingdoms in a hexagonal pattern
-    kingdomsWithSizes.forEach((kingdom, index) => {
-      // Calculate grid position
-      const col = index % gridColumns;
-      const row = Math.floor(index / gridColumns);
-      
-      // Adjust every other row for hexagonal packing
-      const offsetX = (row % 2) * (hexWidth / 2);
-      
-      // Calculate actual position with padding to keep away from edges
-      const padding = 150;
-      const x = padding + offsetX + col * hexWidth;
-      const y = padding + row * hexHeight;
-      
-      kingdom.position = { x, y };
-    });
-    
-    // 6. Apply force-directed algorithm to fine tune and avoid overlaps
-    // Significantly increased strength and iterations
-    const iteration = 100; // More iterations
-    const repulsionStrength = 8000; // Much stronger repulsion
-    
-    // Create a working copy with positions and velocities
-    let workingKingdoms = kingdomsWithSizes.map(kingdom => ({
-      ...kingdom,
-      vx: 0, // velocity x
-      vy: 0, // velocity y
-    }));
-
-    // Run force-directed algorithm iterations
-    for (let i = 0; i < iteration; i++) {
-      // Calculate repulsive forces
-      for (let j = 0; j < workingKingdoms.length; j++) {
-        let fx = 0;
-        let fy = 0;
-        
-        for (let k = 0; k < workingKingdoms.length; k++) {
-          if (j === k) continue;
-          
-          const dx = workingKingdoms[j].position.x - workingKingdoms[k].position.x;
-          const dy = workingKingdoms[j].position.y - workingKingdoms[k].position.y;
-          const distSq = dx * dx + dy * dy;
-          
-          if (distSq === 0) continue;
-          
-          const dist = Math.sqrt(distSq);
-          
-          // Calculate minimum distance needed (with increased buffer)
-          const minDist = (workingKingdoms[j].size + workingKingdoms[k].size) / 1.5;
-          
-          // Apply MUCH stronger repulsion if bubbles are too close
-          if (dist < minDist * 1.5) { // Increased detection range
-            const repulsion = repulsionStrength * (minDist - dist) / dist;
-            fx += (dx / dist) * repulsion;
-            fy += (dy / dist) * repulsion;
-          }
-        }
-        
-        // Add a small force toward the center to prevent spreading too far
-        const centerX = mapWidth / 2;
-        const centerY = mapHeight / 2;
-        const dx = centerX - workingKingdoms[j].position.x;
-        const dy = centerY - workingKingdoms[j].position.y;
-        const distToCenter = Math.sqrt(dx * dx + dy * dy);
-        
-        // Only pull toward center if too far away
-        if (distToCenter > mapWidth * 0.4) {
-          fx += dx * 0.01;
-          fy += dy * 0.01;
-        }
-        
-        // Apply forces with stronger damping
-        workingKingdoms[j].vx = (workingKingdoms[j].vx + fx) * 0.4;
-        workingKingdoms[j].vy = (workingKingdoms[j].vy + fy) * 0.4;
-        
-        // Update position
-        workingKingdoms[j].position.x += workingKingdoms[j].vx;
-        workingKingdoms[j].position.y += workingKingdoms[j].vy;
-        
-        // Keep within bounds with a much larger margin
-        const margin = workingKingdoms[j].size + 100;
-        workingKingdoms[j].position.x = Math.max(margin, Math.min(mapWidth - margin, workingKingdoms[j].position.x));
-        workingKingdoms[j].position.y = Math.max(margin, Math.min(mapHeight - margin, workingKingdoms[j].position.y));
-      }
-    }
-
-    // Update the kingdoms with new positions and sizes
-    setVisibleKingdoms(workingKingdoms.map(({ vx, vy, ...kingdom }) => kingdom));
+    setVisibleKingdoms(gridPlacement);
   }, [kingdoms, filters, searchTerm]);
+
+  // Create a grid-based layout to prevent overlap
+  const createGridLayout = (kingdomsWithSizes: Kingdom[], width: number, height: number) => {
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Calculate the maximum size of any kingdom
+    const maxSize = Math.max(...kingdomsWithSizes.map(k => k.size));
+    
+    // Calculate grid cell size based on the largest kingdom size plus padding
+    const cellSize = maxSize * 1.5;
+    
+    // Spiral layout algorithm
+    let x = 0;
+    let y = 0;
+    let dx = 0;
+    let dy = -1;
+    
+    const result = [...kingdomsWithSizes];
+    
+    // Start with a larger kingdom in the center if available
+    const sortedBySize = [...result].sort((a, b) => b.totalLords - a.totalLords);
+    if (sortedBySize.length > 0) {
+      sortedBySize[0].position = { x: centerX, y: centerY };
+    }
+    
+    // Place remaining kingdoms in spiral pattern
+    for (let i = 1; i < result.length; i++) {
+      // If we're on a corner, change direction
+      if (x === y || (x < 0 && x === -y) || (x > 0 && x === 1 - y)) {
+        const temp = dx;
+        dx = -dy;
+        dy = temp;
+      }
+      
+      // Update spiral position
+      x += dx;
+      y += dy;
+      
+      // Calculate distance from center for scaling spiral
+      const distance = Math.max(Math.abs(x), Math.abs(y));
+      const scale = 1 + distance * 0.5; // Scale spiral outward faster
+      
+      // Calculate actual coordinates from spiral indices
+      const posX = centerX + x * cellSize * scale;
+      const posY = centerY + y * cellSize * scale;
+      
+      // Assign position
+      result[i].position = { x: posX, y: posY };
+    }
+    
+    return result;
+  };
 
   // Calculate bubble size based on lords count
   const sizeForLords = (count: number): number => {
     // Logarithmic scale for sizing to avoid huge bubbles
-    const baseSize = 70; // Larger base size
-    const minSize = 60; // Larger minimum size for better visibility
-    const maxSize = 140;
+    const baseSize = 60;
+    const minSize = 50;
+    const maxSize = 120;
     
     let size;
     if (count <= 1) {
       size = minSize;
     } else {
       // Logarithmic scaling
-      size = baseSize + Math.log2(count) * 18;
+      size = baseSize + Math.log2(count) * 15;
     }
     
     return Math.min(maxSize, Math.max(minSize, size));
@@ -222,7 +148,6 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
   // Functions for map interactivity
   const handleMouseDown = (e: React.MouseEvent) => {
     if (mapRef.current) {
-      e.preventDefault(); // Prevent text selection and other default behaviors
       setDragging(true);
       setDragStart({
         x: e.clientX - position.x,
@@ -233,7 +158,6 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (dragging && mapRef.current) {
-      e.preventDefault();
       const newX = e.clientX - dragStart.x;
       const newY = e.clientY - dragStart.y;
       
@@ -241,8 +165,7 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
     }
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleMouseUp = () => {
     setDragging(false);
   };
 
@@ -250,34 +173,28 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
     setDragging(false);
   };
 
-  const handleZoomIn = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.2, 3));
   };
 
-  const handleZoomOut = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setScale(prev => Math.max(prev - 0.2, 0.2));
+  const handleZoomOut = () => {
+    setScale(prev => Math.max(prev - 0.2, 0.1));
   };
 
-  const handleResetView = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setScale(0.5);
+  const handleResetView = () => {
+    setScale(0.35);
     setPosition({ x: 0, y: 0 });
     setSelectedKingdom(null);
   };
 
   const handleKingdomClick = (kingdom: Kingdom, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent click from closing popup when clicking on a kingdom
-    e.preventDefault();
     setSelectedKingdom(prev => prev?.id === kingdom.id ? null : kingdom);
   };
 
-  const handleMapClick = (e: React.MouseEvent) => {
+  const handleMapClick = () => {
     // Close popup when clicking on empty map area
-    if (!dragging) {
-      setSelectedKingdom(null);
-    }
+    setSelectedKingdom(null);
   };
 
   const handleFilterChange = (newFilters: Partial<typeof filters>) => {
@@ -343,10 +260,10 @@ export function StakersMap({ kingdoms, loading }: StakersMapProps) {
       const borderColor = getRarityColor(dominantRarity);
       
       // Calculate font size based on bubble size
-      const fontSize = Math.max(16, Math.min(32, kingdom.size / 3.5));
+      const fontSize = Math.max(16, Math.min(28, kingdom.size / 4));
       
       // Only show address for bubbles above a certain size
-      const showAddress = kingdom.size >= 60;
+      const showAddress = kingdom.size >= 70;
       
       return (
         <div

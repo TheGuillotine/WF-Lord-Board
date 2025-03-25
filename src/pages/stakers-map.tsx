@@ -3,7 +3,6 @@ import Head from 'next/head';
 import { EnhancedLayout } from '../components/Layout/EnhancedLayout';
 import { StakersMap } from '../components/Dashboard/StakersMap';
 import { useStakersMapData } from '../hooks/useStakersMapData';
-import '../styles/stakers-map.css';
 
 export default function StakersMapPage() {
   const { kingdoms, loading, error } = useStakersMapData();
